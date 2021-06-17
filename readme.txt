@@ -2,25 +2,6 @@ functionsForTUHData is a collection of functions that can be used to work with t
 It includes function for the acess of the TUH data, the extraction of features such as the alpha/theta power,
 extraction of medication information, classifiers and the measuring of the performance for these classifiers.
 
-We created several scripts for different paths of our work:
-
-scrpitFullTuh extracts the alpha/theta power from the packed full TUH Corpus v1.0.0
-
-scriptBoxPlotSlowNormal extracts the alpha/theta power from the normal records of the EEG Abnormal Corpus
-and the slowing containing records of the EEG Slowing Corpus. 
-The extractet values are used to create poxplots to compare the differnd data-sets.
-
-scriptExtractDrugs creates the distribution for detected "slow" records of the full TUH Corpus and anti-psychotic drugs
-
-scriptMLIntDec creates and validates a classifier for slowing intervals based on a feedforward network
-
-scriptTestThresintDec tests different alpha/theta power thresholds for the interval classifier that should detect slowing intervals
-it creates a roc curve for the classification performance
-
-scriptTestThresRecDec test different rate thresholds and alpha/theta power thresholds for the record detection algorithm
-it creates roc curves for the different thresholds
-
-
 ---------------------------------------------------------------------------------
 
 general overview for code concerned with cached, downloading data 
@@ -30,7 +11,7 @@ ScriptTuhDownload.m
         folderCellArray =  listAllDirectories(url, folderCellArray, saveFileName)
         Recursive, will go through all subfolder
         Will save file format, data of creation
-        If it’s a text file it looks for medical information 
+        If itâ€™s a text file it looks for medical information 
 ScriptWorkWithExcelData.m
     (Optional) Filter by medicine 
     medsCell = findClozapineInCellArray(xlsTxtData, medsCell, pattern)
