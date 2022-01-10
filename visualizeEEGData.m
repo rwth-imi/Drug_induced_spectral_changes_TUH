@@ -280,7 +280,7 @@ function calcPValueAndMore(dataNormal, dataMeds, nameMeds)
                     medsAT = alphaMeds./thetaMeds;
                     data{i+1,7} = mean(medsAT,'omitnan');
                     
-                    [h,p] = ttest2(normalAT, medsAT);
+                    [h,p] = ttest2(normalAT, medsAT, 'Vartype','unequal');
                     data{1,8} = strcat('alpha/theta pvalue', nameMeds);
                     data{i+1,8} = p;
                     
@@ -296,7 +296,7 @@ function calcPValueAndMore(dataNormal, dataMeds, nameMeds)
                     medsAB = alphaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);
                     data{i+1,10} = mean(medsAB,'omitnan');
                     
-                    [h,p] = ttest2(normalAB, medsAB);
+                    [h,p] = ttest2(normalAB, medsAB, 'Vartype','unequal');
                     data{1,11} = 'alpha/band pValue';
                     data{i+1,11} = p;
                    
@@ -304,7 +304,7 @@ function calcPValueAndMore(dataNormal, dataMeds, nameMeds)
 
                     medsBB = betaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);
 
-                    [h,p] = ttest2(normalBB, medsBB);
+                    [h,p] = ttest2(normalBB, medsBB, 'Vartype','unequal');
 
                     data{1,15} = 'beta/band pValue';
                     data{i+1,15} = p;
@@ -313,7 +313,7 @@ function calcPValueAndMore(dataNormal, dataMeds, nameMeds)
 
                     medsGB = gammaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);                  
 
-                    [h,p] = ttest2(normalGB, medsGB);
+                    [h,p] = ttest2(normalGB, medsGB, 'Vartype','unequal');
 
                     data{1,16} = 'gamma/band pValue';
                     data{i+1,16} = p;
@@ -322,7 +322,7 @@ function calcPValueAndMore(dataNormal, dataMeds, nameMeds)
 
                     medsDB = deltaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);                   
 
-                    [h,p] = ttest2(normalDB, medsDB);
+                    [h,p] = ttest2(normalDB, medsDB, 'Vartype','unequal');
 
                     data{1,17} = 'delta/band pValue';
                     data{i+1,17} = p; 
@@ -331,7 +331,7 @@ function calcPValueAndMore(dataNormal, dataMeds, nameMeds)
 
                     medsTB = thetaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);                    %medsTB = rmoutliers(medsTB, 'percentiles', [0 outlierPercentageMeds]);                   
 
-                    [h,p] = ttest2(normalTB, medsTB);
+                    [h,p] = ttest2(normalTB, medsTB, 'Vartype','unequal');
 
                     data{1,18} = 'theta/band pValue';
                     data{i+1,18} = p; 
@@ -340,7 +340,7 @@ function calcPValueAndMore(dataNormal, dataMeds, nameMeds)
                     disp('not supposed to reach this');
             end
             %save values            
-            [h,p] = ttest2(normal, meds);
+            [h,p] = ttest2(normal, meds, 'Vartype','unequal');
 
             data{1,1} = 'Channel_Frequency';
             data{i+1,1} = dataN.Properties.VariableNames{i};
@@ -473,7 +473,7 @@ function calcPValueAndMoreWithSampling(dataNormal, dataMeds, nameMeds, timesSamp
                         medsAT = rmoutliers(medsAT, 'percentiles', [0 ourlierPercentageMeds]);
                         tempData{counter,2} = tempData{counter,2} + mean(medsAT(~isnan(medsAT)));
 
-                        [h,p] = ttest2(normalAT, medsAT);
+                        [h,p] = ttest2(normalAT, medsAT, 'Vartype','unequal');
                         tempData{counter,3} = tempData{counter,3}+p;
                         
                         normalAB = alphaNormal./(alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal);
@@ -484,7 +484,7 @@ function calcPValueAndMoreWithSampling(dataNormal, dataMeds, nameMeds, timesSamp
                         medsAB = rmoutliers(medsAB, 'percentiles', [0 ourlierPercentageMeds]);
                         tempData{counter,5} = tempData{counter,5}+ mean(medsAB(~isnan(medsAB)));
 
-                        [h,p] = ttest2(normalAB, medsAB);
+                        [h,p] = ttest2(normalAB, medsAB, 'Vartype','unequal');
                         
                         tempData{counter,6} = tempData{counter,6} + p;
                         
@@ -494,7 +494,7 @@ function calcPValueAndMoreWithSampling(dataNormal, dataMeds, nameMeds, timesSamp
                         medsBB = betaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);
                         medsBB = rmoutliers(medsBB, 'percentiles', [0 ourlierPercentageMeds]);
                         
-                        [h,p] = ttest2(normalBB, medsBB);
+                        [h,p] = ttest2(normalBB, medsBB, 'Vartype','unequal');
                         
                         tempData{counter,7} = tempData{counter,7} + p;
                         
@@ -504,7 +504,7 @@ function calcPValueAndMoreWithSampling(dataNormal, dataMeds, nameMeds, timesSamp
                         medsGB = gammaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);
                         medsGB = rmoutliers(medsGB, 'percentiles', [0 ourlierPercentageMeds]);                   
                         
-                        [h,p] = ttest2(normalGB, medsGB);
+                        [h,p] = ttest2(normalGB, medsGB, 'Vartype','unequal');
                         
                         tempData{counter,8} = tempData{counter,8} + p;
  
@@ -514,7 +514,7 @@ function calcPValueAndMoreWithSampling(dataNormal, dataMeds, nameMeds, timesSamp
                         medsDB = deltaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);
                         medsDB = rmoutliers(medsDB, 'percentiles', [0 ourlierPercentageMeds]);                   
                         
-                        [h,p] = ttest2(normalDB, medsDB);
+                        [h,p] = ttest2(normalDB, medsDB, 'Vartype','unequal');
                         
                         tempData{counter,9} = tempData{counter, 9} + p; 
                         
@@ -524,7 +524,7 @@ function calcPValueAndMoreWithSampling(dataNormal, dataMeds, nameMeds, timesSamp
                         medsTB = thetaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);
                         medsTB = rmoutliers(medsTB, 'percentiles', [0 ourlierPercentageMeds]);                   
                         
-                        [h,p] = ttest2(normalTB, medsTB);
+                        [h,p] = ttest2(normalTB, medsTB, 'Vartype','unequal');
                         
                         tempData{counter,10} = tempData{counter, 10} + p; 
                         
@@ -539,7 +539,7 @@ function calcPValueAndMoreWithSampling(dataNormal, dataMeds, nameMeds, timesSamp
             normal = rmoutliers(normal, 'percentiles', [0 outlierPercentageNormal]);
             meds = rmoutliers(meds, 'percentiles', [0 ourlierPercentageMeds]);
 
-            [h,p] = ttest2(normal, meds);
+            [h,p] = ttest2(normal, meds, 'Vartype','unequal');
             pValueNormalMeds{i} = pValueNormalMeds{i} + p;
             test{j, i} = p; 
             
@@ -686,7 +686,7 @@ end
 function visualizePValues(dataPValue, bAbsolut, sFigureName)
 
     fig = figure('Name', sFigureName, 'visible','off'); 
-
+    
     %for alpha, beta, gamma/alpha by theta, delta, theta 
     for i = 1:7
         
