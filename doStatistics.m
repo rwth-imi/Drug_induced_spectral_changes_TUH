@@ -1,41 +1,48 @@
-%calculate statistics from edf files, returns several xls files and graphic
+%calculate t-test-statistics from edf files, returns several xls files and graphic
 
 %add eeglab to path and start its init file%
-addpath('eeglab2021.0\'); 
-eeglab; 
+%addpath('eeglab2021.0\'); 
+%eeglab; 
 
 %import necessary functions
 d = functionsForTUHData;
 funcEEGData = visualizeEEGData;
+funcEDF = functionsForEDFFiles;
 
-medicine = 'Test/CleanData';
-folder = strcat('EDFData/', medicine);
+%all drugs from Hyun
+meds=["Risperidone", "Olanzapine", "Quetiapine", "Aripiprazole", "Ziprasidone", "Haloperidol", "Clozapin", ...
+    "Escitalopram", "Sertraline", "Paroxetine", "Fluoxetine", "Bupropion", "Venlafaxine", "Mirtazapine", ...
+    "Trazodone", "Valproate", "Lamotrigine", "Carbamazepine", "Topiramate", "Levetiracetam", "Lithium", ...
+    "Lorazepam", "Clonazepam", "Diazepam", "Alprazolam"];
 
-listEDF = d.createFileList('edf',folder);
+meds=["Lithium"];
+%meds=["Clozapin", "Risperidone", "Diazepam"];
+%meds=["Clozapin"];
+for i=1:length(meds)
+    medicine = strcat(meds(i));
+    
+    fileMeds = strcat('Results/Powerspectrum/',medicine,'_powerspectrum.xls');%
+    fileNormal = strcat('Results/Powerspectrum/NormalWOAll_powerspectrum.xls');
 
+    %read data into Matlab
+    %created with prepareData.m
+    dataNormal = readtable(fileNormal);
+    data = readtable(fileMeds);
 
-%calculate power from edf files, returns for each edf file several xls
-%files that contain power for each frequency band
-%uses spectopo from eeglab - for epoched data!
-funcEEGData.calculatePowerForBandsEpochedData(listEDF, false);
+    %calculate statistics
+    funcEEGData.calcPValueAndMore(dataNormal, data, medicine);
 
-filename = strcat(medicine, '_AllFreqAllChannel2.xlsx');
-%combines all power data for all frequencies and all channels
-funcEEGData.calcAllFreqAllChannel(folder, filename)
+    %created in calcPValueAndMore
+    filename = strcat('Results/', medicine, '_normal_data.xls');
+    data = readcell(filename);
 
-%read data into Matlab
-%normal data is created in downloadNormalData.m
-dataNormal = readcell('1_normal_allChannelAllFreq_all.xls');
-%created in calcAllFreqAllChannel
-data = readcell(filename);
- 
-% calculate statistics with sampling
-funcEEGData.calcPValueAndMoreWithSampling(dataNormal, data, medicine, 20, 95, 95);
+    %visualize previously created data and saves figure
+    %visualizePValues(dataPValue, bAT, bAbsolut, sFigureName)
+    % bAbsolut      adjust function for absolut or relative value output
+    imageTitle = strcat(medicine, ' vs Normal - Absolute');
+    funcEEGData.visualizePValues(data, true, imageTitle);
+    
+    imageTitle = strcat(medicine, ' vs Normal - Relative');
+    funcEEGData.visualizePValues(data, false, imageTitle);
 
-%created in calcPValueAndMoreWithSampling
-filename = strcat(medicine, '_normal_data_sampling_201110.xls');
-data = readcell(filename);
-
-imageTitle = strcat(medicine, ' vs Normal - Relative');
-%visualize previously created data
-funcEEGData.visualizePValues(data, true, false, imageTitle);
+end

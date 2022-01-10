@@ -187,7 +187,7 @@ end
 % folderName        Name of the folder in which the data will be saved
 % hint: run listAllDirectories first if excel file is not yet available
 % recursion
-function downloadFolderContentToHardDrive(cellArrayData, folderName)
+function patientData = downloadFolderContentToHardDrive(cellArrayData, folderName)
 import matlab.net.http.*
     
     %check if folder already exists, otherwise create one
@@ -196,9 +196,13 @@ import matlab.net.http.*
     if ~exist(folderName, 'dir')
         mkdir(folderName); 
     end 
-
+    
+    patientData = {};
+    
     for i = 1:size(cellArrayData,1)
-
+        %status update
+        disp(['Downloading file number ' num2str(i)  ' of ' num2str(size(cellArrayData,1))]);
+        
         %at first does the string represent a folder
         if strcmp(cellArrayData{i,3}, 'folder')
 
@@ -257,15 +261,20 @@ import matlab.net.http.*
         options = weboptions('Username', 'nedc', 'Password', 'nedc_resources', 'Timeout', 60); 
         url = cellArrayData{i,1}; 
         
-        try
-            websave(filename, url, options); 
-        catch
-            pause(10);
-            websave(filename, url, options); 
-            disp('saving failed: ' + filename); 
-        end 
-    
-    end 
+        if isfile(filename)
+            disp('file already exists: ' + filename);
+        else
+            try
+                websave(filename, url, options);
+                patientData(i,:)= cellArrayData(i,:);
+            catch
+                pause(10);
+                websave(filename, url, options); 
+                disp('saving failed: ' + filename); 
+            end 
+        end
+        
+    end     
 end
 
 %returns the file name from an url string

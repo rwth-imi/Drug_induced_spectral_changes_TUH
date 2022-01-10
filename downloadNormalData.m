@@ -9,8 +9,8 @@ d = functionsForTUHData;
 funcEEGData = visualizeEEGData;
 download = functionsTuhDownload;
 
-folderName = 'EDFData/Normal';
-fileNormal = 'Data_xls\TUH_Corpus\data_abnormalevalnormal.xls'
+folderName = 'EDFData/NormalFull2';
+fileNormal = 'cachedData\Normal\normalData2.xlsx'
 normalFiles = readcell(fileNormal, 'DateTimeType', 'text'); 
 
 %delete folders
@@ -34,14 +34,6 @@ for ii=1:length(files)
     movefile(oldname,fullfile(path, newname));
 end
 
-%calculate power from edf files, returns for each edf file several xls
-%files that contain power for each frequency band
-listNormal = d.createFileList('edf',folderName);
-funcEEGData.calculatePowerForBands(listNormal,1,0.5);
-
-%combines all power data for all frequencies and all channels
-filename = '1_normal_allChannelAllFreq_all.xls';
-funcEEGData.calcAllFreqAllChannel(folderName, filename)
 
 
 

@@ -6,7 +6,9 @@ function excelDataFunctions = scriptWorkWithExcelData
     excelDataFunctions.getMedicalDataFromExcelSheet = @getMedicalDataFromExcelSheet; 
     excelDataFunctions.findClozapineInCellArray = @findClozapineInCellArray; 
     excelDataFunctions.findFilesWithMedicine = @findFilesWithMedicine; 
+    excelDataFunctions.findFilesWithoutMedicine = @findFilesWithoutMedicine; 
     excelDataFunctions.getDataAndSubfoldersFromStringInCellArray = @getDataAndSubfoldersFromStringInCellArray; 
+    excelDataFunctions.getTradeNames = @getTradeNames; 
 end 
 
 % calcualtes power spectral density for data from an EDF file for all its
@@ -138,6 +140,28 @@ function medsCell = findFilesWithMedicine(xlsTxtData, pattern)
 
 end 
 
+%find all files (edf and txt) where patient did not take certain medicine
+function medsCell = findFilesWithoutMedicine(xlsTxtData, pattern)
+    j = 1; 
+    medsCell={};
+    for i = 1:size(xlsTxtData, 1)
+        meds = xlsTxtData{i,4};  
+        type = xlsTxtData{i,3};
+        if strcmp(type, 'txt')
+            bMedExists = searchForMedication(meds, pattern);
+           if ~bMedExists
+                medsCell{j,1} = xlsTxtData{i,1}; 
+                medsCell{j,2} = xlsTxtData{i,2};
+                medsCell{j,3} = xlsTxtData{i,3};
+                medsCell{j,4} = xlsTxtData{i,4}; 
+                j = j+1; 
+
+           end
+        end
+    end 
+
+end 
+
 %filters out all folder strings with the same starting substring
 %use case: get all subfolders from a patient with a specific medicine 
 % cellArray         cell array in which a prefix is to be found
@@ -165,10 +189,176 @@ function medsIntake=searchForMedication(medication, pattern)
     else 
         medication=lower(medication{:,:});
     end
-    for patternNr=1:size(clozapinePatterns)
-        if sum(contains(medication,clozapinePatterns(patternNr))>0)
+    for patternNr=1:size(clozapinePatterns,2)
+        if sum(contains(medication,clozapinePatterns(patternNr),'IgnoreCase',true)>0)
             medsIntake=true;
             break;
         end
+    end
+end
+
+function pattern = getTradeNames(medicine)
+    pattern = '';
+    %Group AP
+    if strcmp(medicine, 'Risperidone')
+        pattern = ["risperidone", "risperdal", "perseris", "risperdone"];
+        %pattern = ["risperdal", "perseris", "risperdone"];
+    elseif strcmp(medicine, 'Olanzapine')
+        pattern = ["zyprexa", "olanzapine"];
+        %pattern = ["olanzapine"];
+    elseif strcmp(medicine, 'Quetiapine')
+        pattern = ["quetiapine", "seroquel"];
+        %pattern = ["seroquel"];
+    elseif strcmp(medicine, 'Aripiprazole')
+        pattern = ["aripiprazole", "abilify", "aristada"];
+        %pattern = ["abilify", "aristada"];
+    elseif strcmp(medicine, 'Ziprasidone')
+        pattern = ["ziprasidone", "geodon", "zeldox"];
+        %pattern = ["geodon", "zeldox"];
+    elseif strcmp(medicine, 'Haloperidol')
+        pattern = ["haloperidol", "haldol"];
+        %pattern = ["haldol"];
+    elseif strcmp(medicine, 'Amisulpride')
+        pattern = ["amisulpride", "barhemsys"];%no entries found!
+        %pattern = ["barhemsys"];
+    elseif strcmp(medicine, 'Paliperidone')
+        pattern = ["paliperidone", "invega"];
+    elseif strcmp(medicine, 'Cariprazine')
+        pattern = ["cariprazine", "vraylar"];
+    elseif strcmp(medicine, 'Asenapine')
+        pattern = ["asenapin", "saphris", "secuado"];
+    elseif strcmp(medicine, 'Benperidol')
+        pattern = ["benperidol", "anquil", "frenactil"];
+    elseif strcmp(medicine, 'Bromperidol')
+        pattern = ["bromperidol", "bromidol", "bromodol"];
+    elseif strcmp(medicine, 'Chlorprotixene')
+        pattern = ["chlorprotixene", "truxal", "taractan"];
+    elseif strcmp(medicine, 'Flupentixole')
+        pattern = ["flupentixole", "fluanxol"];
+    elseif strcmp(medicine, 'Fluphenazine')
+        pattern = ["fluphenazine", "prolixin", "permitil"];
+    elseif strcmp(medicine, 'Fluspirilene')
+        pattern = ["fluspirilene", "imap"];
+    elseif strcmp(medicine, 'Levomepromazine')
+        pattern = ["levomepromazine", "methotrimeprazine", "nozinan", "levoprome", "detenler", "hirnamin", "levotomin","neurocil"];
+    elseif strcmp(medicine, 'Melperone')
+        pattern = ["melperone", "buronil"];
+    elseif strcmp(medicine, 'Perazin')
+        pattern = ["perazin"];
+    elseif strcmp(medicine, 'Perphenazine')
+        pattern = ["perphenazine", "trilafon"];
+    elseif strcmp(medicine, 'Pimozide')
+        pattern = ["pimozide", "orap"];
+    elseif strcmp(medicine, 'Pipamperon')
+        pattern = ["pipamperon", "carpiperone", "floropipamide", "fluoropipamide", ...
+            "dipiperon", "dipiperal", "piperonil", "piperonyl", "propitan"];
+    elseif strcmp(medicine, 'Prothipendyl')
+        pattern = ["prothipendyl", "dominal", "timovan", "tolnate", "azaphenothiazine", ...
+            "phrenotropin"];
+    elseif strcmp(medicine, 'Sertindole')
+        pattern = ["sertindole", "serdolect"];
+    elseif strcmp(medicine, 'Sulpiride')
+        pattern = ["sulpiride"];
+    elseif strcmp(medicine, 'Thioridazine')
+        pattern = ["thioridazine", "mellaril"];
+    elseif strcmp(medicine, 'Zuclopenthixol')
+        pattern = ["zuclopenthixol", "clopixol"];
+    %Group CLZ
+    elseif strcmp(medicine, 'Clozapin')
+        pattern = ["clozapin","clozaril","clopine","fazaclo"]; 
+        %pattern = ["clozaril","clopine","fazaclo"];
+    %Group AD
+    elseif strcmp(medicine, 'Citalopram')
+        pattern = ["citalopram", "celexa"];
+    elseif strcmp(medicine, 'Escitalopram')
+        pattern = ["escitalopram", "lexapro"];
+        %pattern = ["lexapro"];
+    elseif strcmp(medicine, 'Sertraline')
+        pattern = ["sertraline", "zoloft"];
+        %pattern = ["zoloft"];
+    elseif strcmp(medicine, 'Paroxetine')
+        pattern = ["paroxetine", "paxil", "brisdelle", "pexeva"];
+        %pattern = ["paxil", "brisdelle", "pexeva"];
+    elseif strcmp(medicine, 'Fluoxetine')
+        pattern = ["fluoxetine", "prozac", "sarafem", "rapiflux"];
+        %pattern = ["prozac", "sarafem", "rapiflux"];
+    elseif strcmp(medicine, 'Fluvoxamine')
+        pattern = ["fluvoxamine", "luvox"];
+        %pattern = ["luvox"];
+    elseif strcmp(medicine, 'Bupropion')
+        pattern = ["Bupropion", "Wellbutrin", "Zyban"];
+        %pattern = ["Wellbutrin", "Zyban"];
+    elseif strcmp(medicine, 'Venlafaxine')
+        pattern = ["Venlafaxine", "Effexor"];
+        %pattern = ["Effexor"];
+    elseif strcmp(medicine, 'Mirtazapine')
+        pattern = ["Mirtazapine", "Remeron"];
+        %pattern = ["Remeron"];
+    elseif strcmp(medicine, 'Trazodone')
+        pattern = ["Trazodone", "Desyrel", "Oleptro"];
+        %pattern = ["Desyrel", "Oleptro"];
+    elseif strcmp(medicine, 'Agomelatin')
+        pattern = ["agomelatin", "melitor", "thymanax", "valdoxan"];
+    elseif strcmp(medicine, 'Amitriptyline')
+        pattern = ["amitriptyline", "elavil", "endep", "vanatrip"];
+    elseif strcmp(medicine, 'Clomipramin')
+        pattern = ["clomipramin", "anafranil"];
+    elseif strcmp(medicine, 'Doxepin')
+        pattern = ["doxepin", "silenor", "sinequan", "adapin"];
+    elseif strcmp(medicine, 'Duloxetin')
+        pattern = ["duloxetin", "cymbalta", "drizalma", "irenka"];
+    elseif strcmp(medicine, 'Imipramin')
+        pattern = ["imipramin", "tofranil"];
+    elseif strcmp(medicine, 'Maprotilin')
+        pattern = ["maprotilin", "ludiomil"];
+    elseif strcmp(medicine, 'Mianserin')
+        pattern = ["mianserin"];
+    elseif strcmp(medicine, 'Milnacipran')
+        pattern = ["milnacipran", "Savella"];
+    elseif strcmp(medicine, 'Moclobemid')
+        pattern = ["moclobemid"];
+    elseif strcmp(medicine, 'Nortriptylin')
+        pattern = ["nortriptylin", "pamelor", "aventyl"];
+    elseif strcmp(medicine, 'Reboxetin')
+        pattern = ["reboxetin"];
+    elseif strcmp(medicine, 'Tranylcypromin')
+        pattern = ["tranylcypromin", "parnate"];
+    elseif strcmp(medicine, 'Trimipramin')
+        pattern = ["trimipramin", "surmontil"];
+    %Group AED
+    elseif strcmp(medicine, 'Valproate')
+        pattern = ["Valproate", "Depakene", "Depacon", "Stavzor"];
+        %pattern = ["Depakene", "Depacon", "Stavzor"];
+    elseif strcmp(medicine, 'Lamotrigine')
+        pattern = ["Lamotrigine", "Lamictal", "Subvenite"];
+        %pattern = ["Lamictal", "Subvenite"];
+    elseif strcmp(medicine, 'Carbamazepine')
+        pattern = ["Carbamazepine", "Tegretol", "Carbatrol", "Epitol"];
+        %pattern = ["Tegretol", "Carbatrol", "Epitol"];
+    elseif strcmp(medicine, 'Topiramate')
+        pattern = ["Topiramate", "Topamax", "Trokendi", "Qudexy"];
+        %pattern = ["Topamax", "Trokendi", "Qudexy"];
+    elseif strcmp(medicine, 'Levetiracetam')
+        pattern = ["Levetiracetam", "Elepsia", "Keppra", "Roweepra", "Spritam"];
+        %pattern = ["Elepsia", "Keppra", "Roweepra", "Spritam"];
+    %Group Li
+    elseif strcmp(medicine, 'Lithium')
+        pattern = ["Lithium", "Lithobid", "Eskalith", "Lithonate"];
+        %pattern = ["Lithobid", "Eskalith", "Lithonate"];
+    %Group BDZ
+    elseif strcmp(medicine, 'Lorazepam')
+        pattern = ["Lorazepam", "Ativan"];
+        %pattern = ["Ativan"];
+    elseif strcmp(medicine, 'Clonazepam')
+        pattern = ["Clonazepam", "Klonopin"];
+        %pattern = ["Klonopin"];
+    elseif strcmp(medicine, 'Diazepam')
+        pattern = ["Diazepam", "Valium", "Valtoco", "Diastat"];
+        %pattern = ["Valium", "Valtoco", "Diastat"];
+    elseif strcmp(medicine, 'Alprazolam')
+        pattern = ["Alprazolam", "Xanax", "Niravam"];
+        %pattern = ["Xanax", "Niravam"];
+    else
+        return;
     end
 end

@@ -1,72 +1,93 @@
-%downloads edf and txt files with certain medicine
+%downloads edf and txt files for certain medicine
+clear;
 
 %import necessary functions
 funcs = scriptWorkWithExcelData;
 download = functionsTuhDownload;
 
 %gets cached TUH data
-dataDirectory = 'cachedTUHEEGCorpusData';
+dataDirectory = 'cachedData/cachedTUHEEGCorpusData';
 fileStructure = dir(dataDirectory);
 filenames = {fileStructure(:).name};
 
-medicine = 'Clozapin';
 
-foldersWithMedicine = {}; 
-%searches for all folders in xls file that contain certain medicine
-for i = 3:length(filenames)%entry one and two are just dots
+%all drugs for mixed model
+meds=["Risperidone", "Olanzapine", "Quetiapine", "Aripiprazole", "Ziprasidone", "Haloperidol", ...
+    "Cariprazine", "Asenapine", "Benperidol", "Bromperidol", "Chlorprotixene", "Flupentixole", ...
+    "Fluphenazine", "Fluspirilene", "Levomepromazine", "Melperone", "Perazin", "Perphenazine",...
+    "Pimozide", "Pipamperon", "Prothipendyl", "Sertindole", "Sulpiride", "Thioridazine",...
+    "Zuclopenthixol", "Clozapin", ...
+    "Citalopram", "Escitalopram", "Sertraline", "Paroxetine", "Fluoxetine", "Bupropion", "Venlafaxine", "Mirtazapine", ...
+    "Trazodone", "Agomelatin", "Amitriptyline", "Clomipramin", "Doxepin", "Duloxetin", "Imipramin", ...
+    "Maprotilin", "Mianserin", "Milnacipran", "Moclobemid", "Nortriptylin", "Reboxetin",...
+    "Tranylcypromin", "Trimipramin",...
+    "Lithium"];
 
-    file = append(dataDirectory, '\', filenames{i}); 
-    xlsData = readcell(file, 'DateTimeType', 'text'); 
+%all drugs from Hyun
+% meds=["Risperidone", "Olanzapine", "Quetiapine", "Aripiprazole", "Ziprasidone", "Haloperidol", "Clozapin", ...
+%     "Escitalopram", "Sertraline", "Paroxetine", "Fluoxetine", "Bupropion", "Venlafaxine", "Mirtazapine", ...
+%     "Trazodone", "Valproate", "Lamotrigine", "Carbamazepine", "Topiramate", "Levetiracetam", "Lithium", ...
+%     "Lorazepam", "Clonazepam", "Diazepam", "Alprazolam"];
 
-    xlsTxtData = xlsData(strcmp(xlsData(:,3), 'txt'), :);
+drive="D:/";
 
-    pattern = '';
-    if strcmp(medicine, 'Haloperidol')
-        pattern=["haloperidol", "Haloperidolum", "PhEur", "Haloperidoli", "Haloperidoldecanoat"];
-    elseif strcmp(medicine, 'Clozapin')
-        pattern = ["clozapin","clozaril","clopine","fazaclo","denzapine"]; 
-    elseif strcmp(medicine, 'Quetiapine')
-        pattern = ["quetiapine","seroquel", "quetiapina", "quetiapinum", "quetiapin"];
-    elseif strcmp(medicine, 'Dilantin')
-        pattern= ["dilantin", "epilan", "phenytoin"];
-    elseif strcmp(medicine, 'Olanzapine')
-        pattern = ["olanzapine","zypadhera","zyprexa"];
-    elseif strcmp(medicine, 'Risperidone')
-        pattern =["risperidone", "risperdal", "belivon", "rispen", "risperidal", "rispolept", "risperin", "rispolin", "sequinan", "apexidone", "risperidonum", "risperidona", "psychodal", "spiron"];
-    elseif strcmp(medicine, 'Aripiprazole')
-        pattern = ["aripiprazole", "Aripiprazolum", "monohydricum", "Monohydrat","Aripiprazol"];
-    else
-        return;
+for i=1:length(meds)
+    
+    medicine = meds(i);
+
+    foldersWithMedicine = {}; 
+    %searches for all folders in xls file that contain certain medicine
+    for i = 3:length(filenames)%entry one and two are just dots
+
+        file = append(dataDirectory, '\', filenames{i}); 
+        xlsData = readcell(file, 'DateTimeType', 'text'); 
+
+        xlsTxtData = xlsData(strcmp(xlsData(:,3), 'txt'), :);
+
+        pattern = funcs.getTradeNames(medicine);
+
+        fileWithMedicin = funcs.findFilesWithMedicine(xlsTxtData, pattern); 
+
+        foldersWithMedicine = [foldersWithMedicine; findFolder(fileWithMedicin)]; 
+
     end
 
-    fileWithMedicin = funcs.findFilesWithMedicine(xlsTxtData, pattern); 
+    %list all edf and txt files in folder
+    folderCellArray = {};
+    %files = cell(1, 4);
+    files = {};
+    filesWithMedicine={};
+    l=size(foldersWithMedicine,1);
+    for i = 1:l
+        url   = foldersWithMedicine{i, 1};
+        files = download.listAllDirectories(url, folderCellArray, 'test.xls');
+        for j = 1:length(files)
+            filetype = files{j,3};
+            if strcmp(filetype, 'edf')||strcmp(filetype, 'txt') %download only edf and text files
+                filesWithMedicine= vertcat(filesWithMedicine,files(j,:));
+            end
+        end
+        files = {};
 
-    foldersWithMedicine = [foldersWithMedicine; findFolder(fileWithMedicin)]; 
+    end
 
-end
+    %download edf and txt files
+    folderName= strcat(drive,'EDFData/', medicine);
+    patientData = download.downloadFolderContentToHardDrive(filesWithMedicine, folderName);
 
-%list all edf and txt files in folder
-folderCellArray = {};
-dd = cell(1, 4);
-filesWithMedicine={};
-for i = 1:length(foldersWithMedicine)
-    url   = foldersWithMedicine{i, 1};
-    dd{i} = download.listAllDirectories(url, folderCellArray, 'test.xls');
-    filesWithMedicine= vertcat(filesWithMedicine,dd{i});
-    
-end
+    %save list of all patients
+    filename = strcat(drive,'EDFData/', medicine, '/listOfPatients', medicine, '.xls');
+    %writecell(patientData, filename);
+    writecell(filesWithMedicine, filename);
 
-%download edf and txt files
-folderName= strcat('EDFData/', medicine);
-download.downloadFolderContentToHardDrive(filesWithMedicine, folderName);
-
-%remove .html from edf files
-directory = strcat('EDFData/', medicine, '/*.edf.html');
-files = dir(directory);
-for ii=1:length(files)
-    oldname = fullfile(files(ii).folder,files(ii).name);
-    [path,newname,ext] = fileparts(oldname);
-    movefile(oldname,fullfile(path, newname));
+    %remove .html from edf files
+     directory = strcat(drive,'EDFData/', medicine, '/*.edf.html');
+     files = dir(directory);
+     for ii=1:length(files)
+         oldname = fullfile(files(ii).folder,files(ii).name);
+         [path,newname,ext] = fileparts(oldname);
+         movefile(oldname,fullfile(path, newname));
+     end
 end
     
 
@@ -86,6 +107,6 @@ end
 
 function fileName = getFolderURLFromURLstring(url)
 
-    fileName = url(1: find(url =='/', 1,'last'))
+    fileName = url(1: find(url =='/', 1,'last'));
 end
 

@@ -1,7 +1,7 @@
 %to be able to call single functions from this script 
 function funcEEGData = visualizeEEGData
-  funcEEGData.calcAllFreqAllChannel=@calcAllFreqAllChannel;
-  funcEEGData.calculatePowerForBands=@calculatePowerForBands;
+  funcEEGData.calcAllFreqAllChannel=@calcAllFreqAllChannel;%old
+  funcEEGData.calculatePowerForBands=@calculatePowerForBands;%old
   funcEEGData.calcPValueAndMore=@calcPValueAndMore;
   funcEEGData.calcPValueAndMoreWithSampling=@calcPValueAndMoreWithSampling;
   funcEEGData.visualizePValues=@visualizePValues;
@@ -216,25 +216,41 @@ end
 % dataNormal   accumulated power data for normal set           
 % dataMeds     accumulated power data for drug set
 % nameMeds     name of the medicine from the dataMeds set
-% outlierPercentage      percentage to remove outliers for normal set e.g. 95
-% outlierPercentageMeds  percentage to remove outliers for drug set e.g. 95
-
-%TODO adjust for relative powers 
-function calcPValueAndMore(dataNormal, dataMeds, nameMeds, outlierPercentage,outlierPercentageMeds)
+function calcPValueAndMore(dataNormal, dataMeds, nameMeds)
 
     data = {};
+    
+    %remove rows with values > 100
+%     for j=1:size(dataNormal,2)
+%         dataNormal(dataNormal{:, j}>100, :)= [];
+%     end
+%     for j=1:size(dataMeds,2)
+%         dataMeds(dataMeds{:, j}>100, :)= [];
+%     end
+
+    %remove outliers of entire matrix 
+    dataN = rmoutliers(dataNormal, 'mean');
+    dataM = rmoutliers(dataMeds, 'mean');
+    
+    %dataN=dataNormal;
+    %dataM=dataMeds;
+    
+    %save data
+    fileName = strcat('Results/',nameMeds, '_powerspectrum_rmoutliers.xls'); 
+    writetable(dataM, fileName); 
+    fileName = strcat('Results/Normal_powerspectrum_rmoutliers.xls'); 
+    writetable(dataN, fileName); 
 
     for i = 1:size(dataNormal,2)
-
-        normal = {};
-        meds = {};
-
-        normal = cell2mat(dataNormal(2:size(dataNormal,1), i));
-        meds = cell2mat(dataMeds(2:size(dataMeds,1),i)); 
-        
+        normal = dataN(:, i);
+        meds = dataM(:,i);
+        %datatype: matrix
+        normal = normal{:,:};
+        meds = meds{:,:};
+              
         %check if channel and frequency are the same 
         %should always be the same 
-        if strcmp(dataNormal(1,i), dataMeds(1,i))
+        if strcmp(dataN.Properties.VariableNames{i}, dataM.Properties.VariableNames{i})
 
             %after every 5th set we have enough data to calcuate alpha/band
             %and alpha/theta
@@ -258,13 +274,11 @@ function calcPValueAndMore(dataNormal, dataMeds, nameMeds, outlierPercentage,out
                     
                     data{1,6} = 'alpha/theta mean Normal';
                     normalAT = alphaNormal./thetaNormal;
-                    normalAT = rmoutliers(normalAT, 'percentiles', [0 outlierPercentage]);
-                    data{i+1,6} = mean(normalAT); 
+                    data{i+1,6} = mean(normalAT,'omitnan'); 
                     
                     data{1,7} = strcat('alpha/theta mean', nameMeds);
                     medsAT = alphaMeds./thetaMeds;
-                    medsAT = rmoutliers(medsAT, 'percentiles', [0 outlierPercentageMeds]);
-                    data{i+1,7} = mean(medsAT);
+                    data{i+1,7} = mean(medsAT,'omitnan');
                     
                     [h,p] = ttest2(normalAT, medsAT);
                     data{1,8} = strcat('alpha/theta pvalue', nameMeds);
@@ -274,34 +288,62 @@ function calcPValueAndMore(dataNormal, dataMeds, nameMeds, outlierPercentage,out
                     data{1,9} = 'alpha/band mean Normal';
                     %calculate first otherwise dimenions might not work out
                     normalAB = alphaNormal./(alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal);
-                    %then remove the outliers
-                    normalAB = rmoutliers(normalAB, 'percentiles', [0 outlierPercentage]);
-                    data{i+1,9} = mean(normalAB);
+
+                    data{i+1,9} = mean(normalAB,'omitnan');
                    
                     data{1,10} = strcat('alpha/band mean', nameMeds);
                     %calculate first otherwise dimenions might not work out
                     medsAB = alphaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);
-                    %then remove the outliers
-                    medsAB = rmoutliers(medsAB, 'percentiles', [0 outlierPercentageMeds]);
-                    data{i+1,10} = mean(medsAB);
+                    data{i+1,10} = mean(medsAB,'omitnan');
                     
                     [h,p] = ttest2(normalAB, medsAB);
                     data{1,11} = 'alpha/band pValue';
                     data{i+1,11} = p;
-                    
+                   
+                    normalBB = betaNormal./(alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal);
+
+                    medsBB = betaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);
+
+                    [h,p] = ttest2(normalBB, medsBB);
+
+                    data{1,15} = 'beta/band pValue';
+                    data{i+1,15} = p;
+
+                    normalGB = gammaNormal./(alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal);
+
+                    medsGB = gammaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);                  
+
+                    [h,p] = ttest2(normalGB, medsGB);
+
+                    data{1,16} = 'gamma/band pValue';
+                    data{i+1,16} = p;
+
+                    normalDB = deltaNormal./(alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal);
+
+                    medsDB = deltaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);                   
+
+                    [h,p] = ttest2(normalDB, medsDB);
+
+                    data{1,17} = 'delta/band pValue';
+                    data{i+1,17} = p; 
+
+                    normalTB = thetaNormal./(alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal);
+
+                    medsTB = thetaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);                    %medsTB = rmoutliers(medsTB, 'percentiles', [0 outlierPercentageMeds]);                   
+
+                    [h,p] = ttest2(normalTB, medsTB);
+
+                    data{1,18} = 'theta/band pValue';
+                    data{i+1,18} = p; 
 
                 otherwise
                     disp('not supposed to reach this');
             end
-            
-
-            normal = rmoutliers(normal, 'percentiles', [0 outlierPercentage]);
-            meds = rmoutliers(meds, 'percentiles', [0 ourlierPercentageMeds]);
-
+            %save values            
             [h,p] = ttest2(normal, meds);
 
             data{1,1} = 'Channel_Frequency';
-            data{i+1,1} = dataNormal(1,i);
+            data{i+1,1} = dataN.Properties.VariableNames{i};
 
             data{1,2} = strcat('pValue ', nameMeds, ' & normal');
             data{i+1,2} = p;
@@ -310,26 +352,26 @@ function calcPValueAndMore(dataNormal, dataMeds, nameMeds, outlierPercentage,out
             data{i+1,3} = size(normal,1);
 
             data{1,4} = 'mean normal';
-            data{i+1,4} = mean(normal);         
+            data{i+1,4} = mean(normal,'omitnan');         
 
             data{1,5} = 'std normal'; 
-            data{i+1,5} = std(normal);         
+            data{i+1,5} = std(normal,'omitnan');         
             
             data{1,12} = strcat('data points ', nameMeds);
             data{i+1,12} = size(meds,1);       
 
             data{1,13} = strcat('mean ', nameMeds);
-            data{i+1,13} = mean(meds); 
+            data{i+1,13} = mean(meds,'omitnan'); 
 
             data{1,14} = strcat('std ', nameMeds);
-            data{i+1,14} = std(meds); 
+            data{i+1,14} = std(meds,'omitnan'); 
             
             
         end
 
     end
     
-    fileName = strcat(nameMeds, '_normal_data_200622.xls'); 
+    fileName = strcat('Results/',nameMeds, '_normal_data.xls'); 
     data = cell2table(data);
     writetable(data, fileName); 
 
@@ -368,6 +410,14 @@ function calcPValueAndMoreWithSampling(dataNormal, dataMeds, nameMeds, timesSamp
     %randsample and calc won't be possible with string data in it
     sampleDataNormal(1,:) = [];     
     
+    %todo: remove outliers! Maybe not here?
+%     dataMeds(1,:) = [];
+%     
+%     sampleDataNormal = cell2mat(sampleDataNormal); 
+%     dataMeds = cell2mat(dataMeds);
+%     
+%     sampleDataNormal = rmoutliers(sampleDataNormal, 'mean');
+%     dataMeds = rmoutliers(dataMeds, 'mean');
    
     for j = 1:timesSampling
      
@@ -387,7 +437,9 @@ function calcPValueAndMoreWithSampling(dataNormal, dataMeds, nameMeds, timesSamp
             
             %check if channel and frequency are the same 
             %should always be the same 
-            if strcmp(dataNormal(1,i), dataMeds(1,i))
+            channelNormal = dataNormal(1,i);
+            channelMeds = dataMeds(1,i);
+            if strcmp(channelNormal, channelMeds)
                 %after every 5th set we have enough data to calcuate alpha/band
                 %and alpha/theta
                 x = mod(i,5);         
@@ -414,23 +466,23 @@ function calcPValueAndMoreWithSampling(dataNormal, dataMeds, nameMeds, timesSamp
                         %mean in the next loop, 
                         %TODO find a more elegant version around
                         normalAT = alphaNormal./thetaNormal;
-                        normalAT = rmoutliers(normalAT, 'percentiles', [0 outlierPercentageNormal]);
-                        tempData{counter,1} = tempData{counter,1} + mean(normalAT); 
+                        normalAT = rmoutliers(normalAT, 'percentiles', [0 outlierPercentageNormal]);%todo: braucht man das hier?
+                        tempData{counter,1} = tempData{counter,1} + mean(normalAT(~isnan(normalAT))); 
                         
                         medsAT = alphaMeds./thetaMeds;
                         medsAT = rmoutliers(medsAT, 'percentiles', [0 ourlierPercentageMeds]);
-                        tempData{counter,2} = tempData{counter,2} + mean(medsAT);
+                        tempData{counter,2} = tempData{counter,2} + mean(medsAT(~isnan(medsAT)));
 
                         [h,p] = ttest2(normalAT, medsAT);
                         tempData{counter,3} = tempData{counter,3}+p;
                         
                         normalAB = alphaNormal./(alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal);
                         normalAB = rmoutliers(normalAB, 'percentiles', [0 outlierPercentageNormal]);
-                        tempData{counter,4} = tempData{counter,4} + mean(normalAB);
+                        tempData{counter,4} = tempData{counter,4} + mean(normalAB(~isnan(normalAB)));
                         
                         medsAB = alphaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);
                         medsAB = rmoutliers(medsAB, 'percentiles', [0 ourlierPercentageMeds]);
-                        tempData{counter,5} = tempData{counter,5}+ mean(medsAB);
+                        tempData{counter,5} = tempData{counter,5}+ mean(medsAB(~isnan(medsAB)));
 
                         [h,p] = ttest2(normalAB, medsAB);
                         
@@ -491,6 +543,8 @@ function calcPValueAndMoreWithSampling(dataNormal, dataMeds, nameMeds, timesSamp
             pValueNormalMeds{i} = pValueNormalMeds{i} + p;
             test{j, i} = p; 
             
+            else
+                disp('visualizeEEGData:calcPValueAndMoreWithSampling: channels do not match!');
             end %if            
             
         end %for i
@@ -629,293 +683,326 @@ end
 % bAT           adjust function for alpha/theta output
 % bAbsolut      adjust function for absolut or relative value output
 % sFigureName   Headline for figure output
-function visualizePValues(dataPValue, bAT, bAbsolut, sFigureName)
+function visualizePValues(dataPValue, bAbsolut, sFigureName)
 
-    figure('Name', sFigureName); 
+    fig = figure('Name', sFigureName, 'visible','off'); 
 
     %for alpha, beta, gamma/alpha by theta, delta, theta 
-    for i = 1:5
+    for i = 1:7
         
         freq = ''; 
    
-        subplot(2, 3, i);
+        subplot(2, 4, i);
         switch i
             case 1
                 freq = 'Alpha';
             case 2
                 freq = 'Beta';
             case 3
-                if bAT
-                    freq = 'A/T';
-                else
+                %if bAT
+                 %   freq = 'A/T';
+                %else
                     freq = 'Gamma';
-                end
+                %end
             case 4
-                freq = 'Delta';
+                text(0, 0.4, sFigureName);
+                text(0, 0.3, 'number of patients');
+                numberNormal = dataPValue(3,3);
+                numberNormal = num2str(numberNormal{1});
+                text(0, 0.2, strcat('normal group: ',numberNormal));
+                numberDrug = dataPValue(3,12);
+                text(0, 0.1, strcat('drug group: ',numberDrug));
+             	set(gca, 'xtick', [], 'YColor', 'none'); 
+                freq='none';
             case 5
+                freq = 'Delta';
+            case 6
                 freq = 'Theta';
+            case 7
+                freq = 'A/T';
             otherwise
                 disp('error switch case visualizePValue')
         end
-
-        %nose circle
-        r = 0.25; 
-        c = [3,5];
-        pos = [c-r 2*r 2*r];
-        rectangle('Position',pos,'Curvature',[1 1]);
-
-        %big head circle
-        r = 2; %// radius
-        c = [3 3]; %// center
-        pos = [c-r 2*r 2*r];
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', 'white');
-
-        %FP1 circle
-        r = 0.25; 
-        c = [2.5,4.5];
-        pos = [c-r 2*r 2*r];
-
-        pValue = getPValueFromCellArray(dataPValue, 'FP1', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(2.35, 4.5, 'FP1');
-        
-        %FP2 circle
-        r = 0.25; 
-        c = [3.5,4.5];
-        pos = [c-r 2*r 2*r]; 
-        pValue = getPValueFromCellArray(dataPValue, 'FP2', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(3.35, 4.5, 'FP2');
-        
-        %F7 circle
-        r = 0.25; 
-        c = [1.75,4];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'F7', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(1.65, 4, 'F7');
-        
-        %F3 circle
-        r = 0.25; 
-        c = [2.35,3.75];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'F3', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(2.25, 3.75, 'F3');
-        
-        %Fz circle
-        r = 0.25; 
-        c = [3,3.75];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'FZ', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(2.9, 3.75, 'Fz');
-
-        %F4 circle
-        r = 0.25; 
-        c = [3.6,3.75];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'F4', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(3.5, 3.75, 'F4');
-
-        %F8 circle
-        r = 0.25; 
-        c = [4.25,4];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'F8', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(4.15, 4, 'F8');
-
-        %T3 circle
-        r = 0.25; 
-        c = [1.5,3];
-        pos = [c-r 2*r 2*r];
-        
-        
-        pValue = getPValueFromCellArray(dataPValue, 'T3', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(1.4, 3, 'T3');
-
-        %C3 circle
-        r = 0.25; 
-        c = [2.2,3];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'C3', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(2.1, 3, 'C3');
-
-        %Cz circle
-        r = 0.25; 
-        c = [3,3];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'CZ', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(2.9, 3, 'Cz');
-
-        %C4 circle
-        r = 0.25; 
-        c = [3.8,3];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'C4', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(3.7, 3, 'C4');
-
-        %T4 circle
-        r = 0.25; 
-        c = [4.5,3];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'T4', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(4.4, 3, 'T4');
-
-        %T5 circle
-        r = 0.25; 
-        c = [1.75,2];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'T5', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(1.65, 2, 'T5');
-
-        %P3 circle
-        r = 0.25; 
-        c = [2.35,2.25];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'P3', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(2.25, 2.25, 'P3');
-
-        %Pz circle
-        r = 0.25; 
-        c = [3,2.25];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'PZ', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(2.9, 2.25, 'Pz');
-
-        %P4 circle
-        r = 0.25; 
-        c = [3.6,2.25];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'P4', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(3.5, 2.25, 'P4');
-
-        %T6 circle
-        r = 0.25; 
-        c = [4.25,2];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'T6', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(4.15, 2, 'T6');
-
-        %O1 circle
-        r = 0.25; 
-        c = [2.5,1.5];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'O1', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(2.4, 1.5, 'O1');
-
-        %O2 circle
-        r = 0.25; 
-        c = [3.5,1.5];
-        pos = [c-r 2*r 2*r];
-        
-        pValue = getPValueFromCellArray(dataPValue, 'O2', freq, bAbsolut);
-        color = getColorForPValue(pValue);  
-        rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-        text(3.4, 1.5, 'O2');
-
-        axis equal;
-        xlabel(freq); 
-        set(gca, 'xtick', [], 'YColor', 'none'); 
+        if ~strcmp(freq,'none')
+            plotFace(dataPValue, freq, bAbsolut)
+        end
 
     end
    
     %legend subplot
-    subplot(2,3,6);
-   
+    subplot(2,4,8);
+    plotLegend();
+    
+    set(gcf, 'PaperUnits', 'centimeters');
+    set(gcf, 'PaperPosition', [0 0 45 25]);
+    %savefig(strcat('Results/',sFigureName));
+    saveas(fig, strcat('Results/',sFigureName, '.png'));
+end
+
+function plotFace(dataPValue, freq, bAbsolut)
+    %nose circle
+    r = 0.25; 
+    c = [3,5];
+    pos = [c-r 2*r 2*r];
+    rectangle('Position',pos,'Curvature',[1 1]);
+
+    %big head circle
+    r = 2; %// radius
+    c = [3 3]; %// center
+    pos = [c-r 2*r 2*r];
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', 'white');
+
+    %FP1 circle
+    r = 0.25; 
+    c = [2.5,4.5];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'FP1', freq, bAbsolut);
+
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(2.35, 4.5, 'FP1');
+
+    %FP2 circle
+    r = 0.25; 
+    c = [3.5,4.5];
+    pos = [c-r 2*r 2*r]; 
+    pValue = getPValueFromCellArray(dataPValue, 'FP2', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(3.35, 4.5, 'FP2');
+
+    %F7 circle
+    r = 0.25; 
+    c = [1.75,4];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'F7', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(1.65, 4, 'F7');
+
+    %F3 circle
+    r = 0.25; 
+    c = [2.35,3.75];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'F3', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(2.25, 3.75, 'F3');
+
+    %Fz circle
+    r = 0.25; 
+    c = [3,3.75];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'FZ', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(2.9, 3.75, 'Fz');
+
+    %F4 circle
+    r = 0.25; 
+    c = [3.6,3.75];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'F4', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(3.5, 3.75, 'F4');
+
+    %F8 circle
+    r = 0.25; 
+    c = [4.25,4];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'F8', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(4.15, 4, 'F8');
+
+    %T3 circle
+    r = 0.25; 
+    c = [1.5,3];
+    pos = [c-r 2*r 2*r];
+
+
+    pValue = getPValueFromCellArray(dataPValue, 'T3', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(1.4, 3, 'T3');
+
+    %C3 circle
+    r = 0.25; 
+    c = [2.2,3];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'C3', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(2.1, 3, 'C3');
+
+    %Cz circle
+    r = 0.25; 
+    c = [3,3];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'CZ', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(2.9, 3, 'Cz');
+
+    %C4 circle
+    r = 0.25; 
+    c = [3.8,3];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'C4', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(3.7, 3, 'C4');
+
+    %T4 circle
+    r = 0.25; 
+    c = [4.5,3];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'T4', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(4.4, 3, 'T4');
+
+    %T5 circle
+    r = 0.25; 
+    c = [1.75,2];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'T5', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(1.65, 2, 'T5');
+
+    %P3 circle
+    r = 0.25; 
+    c = [2.35,2.25];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'P3', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(2.25, 2.25, 'P3');
+
+    %Pz circle
+    r = 0.25; 
+    c = [3,2.25];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'PZ', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(2.9, 2.25, 'Pz');
+
+    %P4 circle
+    r = 0.25; 
+    c = [3.6,2.25];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'P4', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(3.5, 2.25, 'P4');
+
+    %T6 circle
+    r = 0.25; 
+    c = [4.25,2];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'T6', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(4.15, 2, 'T6');
+
+    %O1 circle
+    r = 0.25; 
+    c = [2.5,1.5];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'O1', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(2.4, 1.5, 'O1');
+
+    %O2 circle
+    r = 0.25; 
+    c = [3.5,1.5];
+    pos = [c-r 2*r 2*r];
+
+    pValue = getPValueFromCellArray(dataPValue, 'O2', freq, bAbsolut);
+    color = getColorForPValue(pValue);  
+    rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
+    text(3.4, 1.5, 'O2');
+
+    axis equal;
+    xlabel(freq); 
+    set(gca, 'xtick', [], 'YColor', 'none'); 
+end
+
+function plotLegend()
+    width=0.55;
     % positive p values -> red hue
-    color = getColorForPValue(0.001); 
-    rectangle('Position', [1, 1, 0.5, 0.5], 'FaceColor', color); 
-    text(1.01, 1.25, 'Increase, p < 0.01');
+    color = getColorForPValue(0.0001); 
+    rectangle('Position', [1, 1, width, 0.5], 'FaceColor', color); 
+    text(1.01, 1.25, 'Increase, p < 0.001');
+    
+    color = getColorForPValue(0.005); 
+    rectangle('Position', [1, 1.5, width, 0.5], 'FaceColor', color); 
+    text(1.01, 1.75, 'Increase, p < 0.01');
     
     color = getColorForPValue(0.04); 
-    rectangle('Position', [1, 1.5, 0.5, 0.5], 'FaceColor', color); 
-    text(1.01, 1.75, 'Increase, p < 0.05');
+    rectangle('Position', [1, 2, width, 0.5], 'FaceColor', color);
+    text(1.01, 2.25, 'Increase, p < 0.05');
     
     color = getColorForPValue(0.06); 
-    rectangle('Position', [1, 2, 0.5, 0.5], 'FaceColor', color);  
-    text(1.01, 2.25, 'Increase, p < 0.1');
+    rectangle('Position', [1, 2.5, width, 0.5], 'FaceColor', color); 
+    text(1.01, 2.75, 'Increase, p < 0.1');
     
     color = getColorForPValue(0.15); 
-    rectangle('Position', [1, 2.5, 0.5, 0.5], 'FaceColor', color); 
-    text(1.01, 2.75, 'Increase, p < 0.2');
+    rectangle('Position', [1,3, width, 0.5], 'FaceColor',color);
+    text(1.01, 3.25, 'Increase, p > 0.1');
     
-    color = getColorForPValue(0.5); 
-    rectangle('Position', [1,3, 0.5, 0.5], 'FaceColor',color); 
-    text(1.01, 3.25, 'Increase, 0.2 < p'); 
+    %color = getColorForPValue(0.5); 
+    %rectangle('Position', [1,3, width, 0.5], 'FaceColor',color); 
+    %text(1.01, 3.25, 'Increase, 0.2 < p'); 
     
     % negative p values -> blue hue
+    color = getColorForPValue(-0.0001); 
+    rectangle('Position', [1.6, 1, width, 0.5], 'FaceColor', color); 
+    text(1.61, 1.25, 'Decrease, p < 0.001');
+    
     color = getColorForPValue(-0.001); 
-    rectangle('Position', [1.6, 1, 0.5, 0.5], 'FaceColor', color); 
-    text(1.61, 1.25, 'Decrease, p < 0.01');
+    rectangle('Position', [1.6, 1.5, width, 0.5], 'FaceColor', color);  
+    text(1.61, 1.75, 'Decrease, p < 0.01');
     
     color = getColorForPValue(-0.04); 
-    rectangle('Position', [1.6, 1.5, 0.5, 0.5], 'FaceColor', color); 
-    text(1.61, 1.75, 'Decrease, p < 0.05');
+    rectangle('Position', [1.6, 2, width, 0.5], 'FaceColor', color);  
+    text(1.61, 2.25, 'Decrease, p < 0.05');
     
     color = getColorForPValue(-0.06); 
-    rectangle('Position', [1.6, 2, 0.5, 0.5], 'FaceColor', color); 
-    text(1.61, 2.25, 'Decrease, p < 0.1');
+    rectangle('Position', [1.6, 2.5, width, 0.5], 'FaceColor', color); 
+    text(1.61, 2.75, 'Decrease, p < 0.1');
     
     color = getColorForPValue(-0.15); 
-    rectangle('Position', [1.6, 2.5, 0.5, 0.5], 'FaceColor', color); 
-    text(1.61, 2.75, 'Decrease, p < 0.2');
+    rectangle('Position', [1.6, 3, width, 0.5], 'FaceColor', color); 
+    text(1.61, 3.25, 'Decrease, p > 0.1');
     
-    color = getColorForPValue(-0.5); 
-    rectangle('Position', [1.6, 3, 0.5, 0.5], 'FaceColor', color); 
-    text(1.61, 3.25, 'Decrease, 0.2 < p'); 
+    %color = getColorForPValue(-0.5); 
+    %rectangle('Position', [1.6, 3, width, 0.5], 'FaceColor', color); 
+    %text(1.61, 3.25, 'Decrease, 0.2 < p'); 
     
     xlabel('Legend'); 
     set(gca, 'xtick', [], 'YColor', 'none'); 
-    
 end
-
 % gets correct value from summary data file 
 %  dataArray    data from summary data file
 %  channel      string with channel name
@@ -930,10 +1017,11 @@ function pValue = getPValueFromCellArray(dataArray, channel, frequency, bAbsolut
         for i = 1:length(dataArray)
             if strcmp(compareString, dataArray{i,1})
                 pValue = dataArray{i, 8};
-
+                
                 dataMeds = dataArray{i,7};
                 dataNormal = dataArray{i,6};
                 meanDiff = dataMeds - dataNormal;
+                break;
             end
         end
     else
@@ -960,13 +1048,18 @@ function pValue = getPValueFromCellArray(dataArray, channel, frequency, bAbsolut
                 end
                 
                 dataMeds = dataArray{i, 13};
+                dataMeds = str2double(dataMeds);
                 dataNormal = dataArray{i, 4};
+                %dataNormal = str2double(dataNormal);
                 meanDiff = dataMeds - dataNormal; 
 
             end
         end
     end
-    
+    isNumber = ~isnan(str2double(pValue)); 
+    if isNumber
+        pValue = str2double(pValue);
+    end
     % check for mean difference
     % sign codifies if it's red (positive) or blue (negative)
     if meanDiff < 0
@@ -980,26 +1073,32 @@ end
 % negative values are a hue of blue
 function color = getColorForPValue(pValue)
 
-    if pValue > 0 && pValue <= 0.01
+    if pValue > 0 && pValue <= 0.001
         color = '#A40000'; % Dark Candy Apple Red
-    elseif pValue > 0.01 && pValue <= 0.05
+    elseif pValue > 0.001 && pValue <= 0.01
         color = '#CC0000'; % Boston Univeristy Red
-    elseif pValue > 0.05 && pValue <= 0.1
+    elseif pValue > 0.01 && pValue <= 0.05
         color = '#E34234'; % Cinnabar
-    elseif pValue > 0.1 && pValue <= 0.2
+    elseif pValue > 0.05 && pValue <= 0.1
         color = '#FF6961'; % Pastel Red
+    elseif pValue > 0.1 && pValue <= 0.2
+        color = '#FFFFFF';%'#F4C2C2'; %Baby Pink
     elseif pValue > 0.2
-        color = '#F4C2C2'; %Baby Pink
+        color = '#FFFFFF';
     elseif -0.2 > pValue
-        color = '#CCCCFF'; % Lavender Blue
+        color = '#FFFFFF';%'#CCCCFF'; % Lavender Blue
     elseif -0.1 >= pValue && pValue > -0.2
-        color = '#92A1CF'; % Ceil
+        color = '#FFFFFF';%'#92A1CF'; % Ceil
     elseif -0.05 >= pValue && pValue > -0.1
-        color = '#2A52BE'; % cerulean blue
+        color = '#aed6f1'; % Ceil
     elseif -0.01 >= pValue && pValue > -0.05
-        color = '#00008B'; % dark blue
-    elseif 0 >= pValue && pValue > -0.01
-        color = '#002366'; % royal blue
+        color = '#5dade2'; % cerulean blue
+    elseif -0.001 >= pValue && pValue > -0.01
+        color = '#2e86c1'; % dark blue
+    elseif 0 >= pValue && pValue > -0.001
+        color = '#21618c'; % royal blue
+    else
+        color = '#399a33'; %green: something went wrong!
     end
 end
 
@@ -1043,9 +1142,9 @@ function barhGraph(data, data2, channel, sDrugs)
     xlabel(strcat('Mean for channel', {' '}, channel));
 end
 
-function createCompleteDrugsList()
+function createCompleteDrugsList(path)
 
-    path = 'xls'; 
+    %path = 'xls'; 
     a = functionsForTUHData;
     list = a.createFileList('xls',path); 
 
@@ -1054,13 +1153,13 @@ function createCompleteDrugsList()
     for i=1:size(list)
         temp = {}; 
         temp = meds; 
-        data = readcell(list{i,1}); 
+        data = readcell(list{i,1}, 'DateTimeType', 'text'); 
         x = data(:,4); 
         y = x(cellfun(@ischar,x));
         meds = [temp; y]; 
     end
     
-    is = 'some'; 
+    writecell(meds, 'meds.xls');
 
     
 end
