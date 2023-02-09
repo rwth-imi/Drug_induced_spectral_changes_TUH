@@ -5,8 +5,6 @@ addpath('eeglab2021.0\');
 eeglab; 
 
 %import necessary functions
-d = functionsForTUHData;
-funcEEGData = visualizeEEGData;
 download = functionsTuhDownload;
 
 folderName = 'EDFData/NormalFull2';

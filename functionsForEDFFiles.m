@@ -2,6 +2,8 @@
 function funcEEGData = functionsForEDFFiles
   funcEEGData.calculatePowerForBands=@calculatePowerForBands;%for mixed model
   funcEEGData.calculatePowerForBandsAveragePatient=@calculatePowerForBandsAveragePatient;%for t-test
+  funcEEGData.calculatePowerForBandsTTest=@calculatePowerForBandsTTest;
+  funcEEGData.averagePatientTTest=@averagePatientTTest;
   funcEEGData.cleanData=@cleanData;
 end
 
@@ -209,6 +211,180 @@ function loc = ElectrodeLocation(channel)
     end
 end
 
+%  calculates the power spectral density for a list of edf files and saves them in a file for t-test - uses
+%  functions from eeglab
+%  list         List of edf files with folder paths (sorted by name)
+%  saveFile     filename of saved file
+%  removedFilesName  name of file that saves which files are excluded from
+%       analysis
+function calculatePowerForBandsTTest(list, saveFile, removedFilesName)
+
+    data={};
+    removedFiles=[];
+    listResult=[];
+    
+    powerAlpha={};
+    powerTheta={};
+    powerDelta={};
+    powerBeta={};
+    powerGamma={};
+    
+    %setup all channel and frequency names
+    visEEG = visualizeEEGData;
+    [channels, frequencies] = visEEG.setUpChannelsFrequencies();
+    
+    j=1;
+    i=1;
+    for nrEDF = 1:length(list)
+        %status update
+        disp(['Calculate power for bands: file number ' num2str(nrEDF)  ' of ' num2str(length(list))]);
+               
+        %read edf file
+        try
+        EEGData = pop_biosig(list{nrEDF},'importevent','off','importannot','off');
+        
+        %remove epochs with too low or high amplitudes
+        %remove all channels for corupted epochs
+        EEGData = eeg_regepochs(EEGData, 5);
+        removeEpoch = false;
+        newData=[];
+        for epoch = 1: size(EEGData.data,3)
+            for channel = 1:size(EEGData.data,1)
+                amplitudes = EEGData.data(channel, 1:size(EEGData.data,2), epoch);
+                meanAmp = mean(abs(amplitudes));
+                if meanAmp>100
+                    %remove epoch
+                    removeEpoch = true;
+                    break;
+                end
+            end
+            if ~removeEpoch
+                newData = cat(3, newData, EEGData.data(:, :, epoch));
+            end
+        end
+        EEGData.data = newData;
+        if length(newData)~=0
+            %calculate power spectral density for one edf file  
+            [powerAlpha{i}, powerTheta{i}, powerDelta{i}, powerBeta{i}, powerGamma{i}] = calculatePowerSpectrum(EEGData);
+        
+            listResult{i}=list{nrEDF};
+            i=i+1;
+        else
+            removedFiles=[removedFiles; string(list{nrEDF})];
+        end
+        catch 
+            disp(['Error in calculatePowerForBandsTTest for file ' list{nrEDF} '!']);
+            removedFiles=[removedFiles; string(list{nrEDF})];
+        end
+        
+    end   
+    %update data table
+    for k = 1:length(channels)
+        data = getPowerData(data, channels{k}, powerAlpha, '_powerAlpha', j);
+        j=j+1;
+        data = getPowerData(data, channels{k}, powerBeta, '_powerBeta', j );
+        j=j+1;
+        data = getPowerData(data, channels{k}, powerGamma, '_powerGamma', j );
+        j=j+1;
+        data = getPowerData(data, channels{k}, powerDelta, '_powerDelta', j );
+        j=j+1;
+        data = getPowerData(data, channels{k}, powerTheta, '_powerTheta', j );
+        j=j+1;
+    end
+    data{1,j}="File";
+    for l = 1:length(listResult)
+        %get patient number, session number and file number
+        filename=strsplit(listResult{l},'\');
+        filename=filename(end);
+        filename = string(filename);
+        %add patient nr
+        data{l+1,j}=filename;
+    end
+    %save data
+    writecell(data, saveFile);
+    %save what files were removed
+    fid=fopen(removedFilesName,'w');
+    for i=1:length(removedFiles)
+        fprintf(fid, '%s\n', removedFiles(i));
+    end
+    fclose(fid);
+end
+
+%  takes average of each patient for previously calculated powerspectrum in
+%  function calculatePowerForBandsTTest
+%  powerFile     filename of file with powerspectrum created in calculatePowerForBandsTTest
+function averagePatientTTest(powerFile, saveFile)
+
+    lastPatient='';
+    j=1;
+    nrPatient=1;
+    
+    %read file
+    power=readcell(powerFile);
+    l=size(power,2);
+    s=size(power,1);
+    
+    data(1,:)=power(1,:);
+    data{1,l}="Patient Nr";
+    
+    %powerPatient(1,:)=power(1,1:l-1);%column names
+    
+    for nrEDF = 2:s
+        %status update
+        %disp(['average: file number ' num2str(nrEDF-1)  ' of ' num2str(s-1)]);
+        
+        %average over patients
+        %filename=strsplit(power{nrEDF,l},'\');
+        %filename=filename(end);
+        filename = string(power{nrEDF,l});
+        id = strsplit(filename, '_');
+        patientNr = id(1);
+        
+        if ~strcmp(lastPatient,patientNr) && ~strcmp(lastPatient,'')
+            %average over patient
+            %emptyIndex = cellfun(@ismissing, powerPatient, 'UniformOutput', false);     % Find indices of missing cells
+            %powerPatient(emptyIndex) = {nan};                    % Fill missing cells with empty cell
+            powerPatient( cellfun( @(c) isa(c,'missing'), powerPatient ) ) = {nan};
+            powerPatient = cell2mat(powerPatient);
+            if size(powerPatient,1)>1
+                %remove outliers
+                powerPatient = rmoutliers(powerPatient, 'mean');
+                %take mean
+                powerPatient=mean(powerPatient,'omitnan');
+            end
+            powerPatient = [powerPatient, str2double(lastPatient)];
+            powerPatient=num2cell(powerPatient);
+            data = [data; powerPatient];
+            
+            powerPatient={};
+            nrPatient=nrPatient+1;
+            j=1;
+        end
+        
+        lastPatient = patientNr;
+        
+        %get power for bands
+        powerPatient(j,:)=power(nrEDF,1:l-1);
+        j=j+1;
+
+    end   
+    %average over patient
+    %emptyIndex = cellfun(@ismissing, powerPatient);     % Find indices of missing cells
+    %powerPatient(emptyIndex) = {nan};                    % Fill missing cells with empty cell
+    powerPatient( cellfun( @(c) isa(c,'missing'), powerPatient ) ) = {nan};
+    powerPatient = cell2mat(powerPatient);
+    if size(powerPatient,1)>1
+        %remove outliers
+        powerPatient = rmoutliers(powerPatient, 'mean');
+        %take mean
+        powerPatient=mean(powerPatient,'omitnan');
+    end
+    powerPatient = [powerPatient, str2double(lastPatient)];
+    powerPatient=num2cell(powerPatient);
+    data = [data; powerPatient];%save data
+
+    writecell(data, saveFile);
+end 
 
 %  calculates the power spectral density for a list of edf files and saves them in a file for t-test - uses
 %  functions from eeglab, takes average of each patient
@@ -223,6 +399,12 @@ function calculatePowerForBandsAveragePatient(list, saveFile, removedFilesName)
     data={};
     nrPatient=1;
     removedFiles=[];
+    
+    powerAlpha={};
+    powerTheta={};
+    powerDelta={};
+    powerBeta={};
+    powerGamma={};
     
     for nrEDF = 1:length(list)
         %status update
@@ -306,8 +488,13 @@ function data = getPowerData(data, channel, power, powerName, k)
 
     for j = 1:length(power)
         ps=power{1,j};
-        index = strfind(ps(1,:),channel);
-        index = find(~cellfun(@isempty,index));
+        if ~(isempty(ps))
+            index = strfind(ps(1,:),channel);
+            index = find(~cellfun(@isempty,index));
+        
+        else
+            index=[];
+        end
         if isempty(index)
             data{j+1,k} = [NaN];
         elseif isscalar(index)
@@ -390,6 +577,7 @@ end
 function cleanData(listEDFFiles)
     numberOfSmallFiles=0;
     numberOfDeletedFiles=0;
+    numberOfNotSavedFiles=0;
     
     %create new folder
     temp = strsplit(listEDFFiles{1}, '\');
@@ -446,9 +634,15 @@ function cleanData(listEDFFiles)
                 %vis_artifacts(EEGClean,EEGData);
 
                 if ~error
-                    %save edf files
-                    newFilename = strcat(folderpath, 'CleanData\', filename{1});
-                    pop_writeeeg(EEGClean, newFilename, 'TYPE','EDF');
+                    try
+                        %save edf files
+                        newFilename = strcat(folderpath, 'CleanData\', filename{1});
+                        pop_writeeeg(EEGClean, newFilename, 'TYPE','EDF');
+                    catch
+                        disp('Error: cleaned file could not be saved!');
+                        disp(strcat('Filename: ',listEDFFiles{i}));
+                        numberOfNotSavedFiles=numberOfNotSavedFiles+1;
+                    end
                 else
                     error = false;
                 end
@@ -461,6 +655,7 @@ function cleanData(listEDFFiles)
     fileID = fopen(strcat(folderpath, 'CleanData\', 'deletedFiles.txt'),'w');
     fprintf(fileID,'Number of files that were too small to be cleaned: %i\n',numberOfSmallFiles);
     fprintf(fileID,'Number of files that could not be cleaned due to error: %i\n',numberOfDeletedFiles);
+    fprintf(fileID,'Number of files that could not be saved due to error: %i\n',numberOfNotSavedFiles);
     fclose(fileID);
 end 
 

@@ -1,12 +1,14 @@
 %put together drug data table and normal data table
 
+drive="D:/";
+
 %drug data table with receptor properties
-savefile ="Results\FullTableMixedModel2.csv";
+savefile =strcat(drive, "Results\FullTableMixedModel.csv");
 dataAll=readtable(savefile);
 
 %normal data table (only patients that took no drugs) without receptor
 %properties 
-file2 ="Results\Powerspectrum\NormalWOAllMixed_powerspectrum.csv";
+file2 =strcat(drive, "Results\Powerspectrum\NormalWOAllMixed_powerspectrum.csv");
 dataNormal=readtable(file2);
 
 %all drugs for mixed model
@@ -25,13 +27,14 @@ for j=1:length(meds)
     dataNormal.(meds{j})=zeros(size(dataNormal,1),1);
 end
 %add headers for drug groups
-dataNormal.Antidepressant=zeros(size(dataNormal,1),1);
-dataNormal.Antipsychotic=zeros(size(dataNormal,1),1);
+%dataNormal.Antidepressant=zeros(size(dataNormal,1),1);
+%dataNormal.Antipsychotic=zeros(size(dataNormal,1),1);
+dataNormal.DrugGroup=zeros(size(dataNormal,1),1);
 %add headers for categories
 dataNormal.SGA=zeros(size(dataNormal,1),1);
 dataNormal.FGA=zeros(size(dataNormal,1),1);
 %add headers for receptor properties
-receptorPropertiesFile="Results/DrugReceptorProperties.xlsx";
+receptorPropertiesFile=strcat(drive, "Results/DrugReceptorProperties.xlsx");
 fileReceptor = readtable(receptorPropertiesFile);
 header = fileReceptor.Properties.VariableNames;
 %set all receptor properties zero
@@ -43,5 +46,5 @@ end
 newTable = [dataAll; dataNormal];
 
 %save
-savefile =strcat("Results\FullTableMixedModelNormal.csv");
+savefile =strcat(drive, "Results\FullTableMixedModelNormal.csv");
 writetable(newTable, savefile);

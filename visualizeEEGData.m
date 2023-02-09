@@ -216,165 +216,144 @@ end
 % dataNormal   accumulated power data for normal set           
 % dataMeds     accumulated power data for drug set
 % nameMeds     name of the medicine from the dataMeds set
-function calcPValueAndMore(dataNormal, dataMeds, nameMeds)
+% savepath     path to save files
+%group         name of group (normal,AD, AED,...) to compare with, only used to save files
+function calcPValueAndMore(dataNormal, dataMeds, nameMeds, savepath, group)
 
     data = {};
     
-    %remove rows with values > 100
-%     for j=1:size(dataNormal,2)
-%         dataNormal(dataNormal{:, j}>100, :)= [];
-%     end
-%     for j=1:size(dataMeds,2)
-%         dataMeds(dataMeds{:, j}>100, :)= [];
-%     end
-
     %remove outliers of entire matrix 
+    dataMeds( : , end ) = [ ] ;%remove patient info for calculations
     dataN = rmoutliers(dataNormal, 'mean');
     dataM = rmoutliers(dataMeds, 'mean');
-    
-    %dataN=dataNormal;
-    %dataM=dataMeds;
-    
+        
     %save data
-    fileName = strcat('Results/',nameMeds, '_powerspectrum_rmoutliers.xls'); 
+    fileName = strcat(savepath,nameMeds, '_powerspectrum_rmoutliers.xls'); 
     writetable(dataM, fileName); 
-    fileName = strcat('Results/Normal_powerspectrum_rmoutliers.xls'); 
+    fileName = strcat(savepath,group,'_powerspectrum_rmoutliers.xls'); 
     writetable(dataN, fileName); 
+    
+    alphaNormal =  {};
+    alphaMeds = {}; 
+    betaNormal = {};
+    betaMeds = {};
+    gammaNormal = {};
+    gammaMeds = {};
+    deltaNormal = {};
+    deltaMeds = {};
+    thetaNormal = {};
+    thetaMeds = {};
+    
+    data{1,1} = 'Channel_Frequency';
+    data{1,2} = strcat('pValue ', nameMeds, ' & normal');
+    data{1,3} = 'data points normal';
+    data{1,4} = 'mean normal';
+    data{1,5} = 'std normal'; 
+    data{1,6} = strcat('data points ', nameMeds);
+    data{1,7} = strcat('mean ', nameMeds);
+    data{1,8} = strcat('std ', nameMeds);
 
-    for i = 1:size(dataNormal,2)
+    j=1;
+    for i = 1:size(dataNormal,2)-1
         normal = dataN(:, i);
-        meds = dataM(:,i);
         %datatype: matrix
-        normal = normal{:,:};
-        meds = meds{:,:};
-              
-        %check if channel and frequency are the same 
-        %should always be the same 
-        if strcmp(dataN.Properties.VariableNames{i}, dataM.Properties.VariableNames{i})
+        normal = normal{:,:};    
+        channel_freq = dataN.Properties.VariableNames{i};
+        meds = dataM{:,channel_freq};
 
-            %after every 5th set we have enough data to calcuate alpha/band
-            %and alpha/theta
-            x = mod(i,5);
-            switch x
-                case 1
-                    alphaNormal =  (normal);
-                    alphaMeds = (meds); 
-                case 2
-                    betaNormal = (normal);
-                    betaMeds = (meds);
-                case 3
-                    gammaNormal = (normal);
-                    gammaMeds = (meds);
-                case 4
-                    deltaNormal = (normal);
-                    deltaMeds = (meds);
-                case 0
-                    thetaNormal = (normal);
-                    thetaMeds = (meds);
-                    
-                    data{1,6} = 'alpha/theta mean Normal';
-                    normalAT = alphaNormal./thetaNormal;
-                    data{i+1,6} = mean(normalAT,'omitnan'); 
-                    
-                    data{1,7} = strcat('alpha/theta mean', nameMeds);
-                    medsAT = alphaMeds./thetaMeds;
-                    data{i+1,7} = mean(medsAT,'omitnan');
-                    
-                    [h,p] = ttest2(normalAT, medsAT, 'Vartype','unequal');
-                    data{1,8} = strcat('alpha/theta pvalue', nameMeds);
-                    data{i+1,8} = p;
-                    
-                    
-                    data{1,9} = 'alpha/band mean Normal';
-                    %calculate first otherwise dimenions might not work out
-                    normalAB = alphaNormal./(alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal);
+        data = setData(dataN.Properties.VariableNames{i}, j, normal, meds, data);
+        j=j+1;%update index
 
-                    data{i+1,9} = mean(normalAB,'omitnan');
-                   
-                    data{1,10} = strcat('alpha/band mean', nameMeds);
-                    %calculate first otherwise dimenions might not work out
-                    medsAB = alphaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);
-                    data{i+1,10} = mean(medsAB,'omitnan');
-                    
-                    [h,p] = ttest2(normalAB, medsAB, 'Vartype','unequal');
-                    data{1,11} = 'alpha/band pValue';
-                    data{i+1,11} = p;
-                   
-                    normalBB = betaNormal./(alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal);
-
-                    medsBB = betaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);
-
-                    [h,p] = ttest2(normalBB, medsBB, 'Vartype','unequal');
-
-                    data{1,15} = 'beta/band pValue';
-                    data{i+1,15} = p;
-
-                    normalGB = gammaNormal./(alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal);
-
-                    medsGB = gammaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);                  
-
-                    [h,p] = ttest2(normalGB, medsGB, 'Vartype','unequal');
-
-                    data{1,16} = 'gamma/band pValue';
-                    data{i+1,16} = p;
-
-                    normalDB = deltaNormal./(alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal);
-
-                    medsDB = deltaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);                   
-
-                    [h,p] = ttest2(normalDB, medsDB, 'Vartype','unequal');
-
-                    data{1,17} = 'delta/band pValue';
-                    data{i+1,17} = p; 
-
-                    normalTB = thetaNormal./(alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal);
-
-                    medsTB = thetaMeds./(alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds);                    %medsTB = rmoutliers(medsTB, 'percentiles', [0 outlierPercentageMeds]);                   
-
-                    [h,p] = ttest2(normalTB, medsTB, 'Vartype','unequal');
-
-                    data{1,18} = 'theta/band pValue';
-                    data{i+1,18} = p; 
-
-                otherwise
-                    disp('not supposed to reach this');
-            end
-            %save values            
-            [h,p] = ttest2(normal, meds, 'Vartype','unequal');
-
-            data{1,1} = 'Channel_Frequency';
-            data{i+1,1} = dataN.Properties.VariableNames{i};
-
-            data{1,2} = strcat('pValue ', nameMeds, ' & normal');
-            data{i+1,2} = p;
-
-            data{1,3} = 'data points normal';
-            data{i+1,3} = size(normal,1);
-
-            data{1,4} = 'mean normal';
-            data{i+1,4} = mean(normal,'omitnan');         
-
-            data{1,5} = 'std normal'; 
-            data{i+1,5} = std(normal,'omitnan');         
-            
-            data{1,12} = strcat('data points ', nameMeds);
-            data{i+1,12} = size(meds,1);       
-
-            data{1,13} = strcat('mean ', nameMeds);
-            data{i+1,13} = mean(meds,'omitnan'); 
-
-            data{1,14} = strcat('std ', nameMeds);
-            data{i+1,14} = std(meds,'omitnan'); 
-            
-            
+        frequency=dataN.Properties.VariableNames{i};
+        if contains(frequency,'alpha','IgnoreCase',true)
+            alphaNormal =  (normal);
+            alphaMeds = (meds); 
+        elseif contains(frequency,'beta','IgnoreCase',true)
+            betaNormal = (normal);
+            betaMeds = (meds);
+        elseif contains(frequency,'gamma','IgnoreCase',true)
+            gammaNormal = (normal);
+            gammaMeds = (meds);
+        elseif contains(frequency,'delta','IgnoreCase',true)
+            deltaNormal = (normal);
+            deltaMeds = (meds);
+        elseif contains(frequency,'theta','IgnoreCase',true)
+            thetaNormal = (normal);
+            thetaMeds = (meds);
         end
+        %if all values are assigned, alpha/theta and frequency/band can
+        %be calculated
+        if (~isempty(alphaNormal) && ~isempty(alphaMeds) && ~isempty(betaNormal) && ~isempty(betaMeds) ...
+            && ~isempty(gammaNormal) && ~isempty(gammaMeds) && ~isempty(deltaNormal) && ~isempty(deltaMeds) ...
+            && ~isempty(thetaNormal) && ~isempty(thetaMeds))
 
+            %get channel name
+            channel=strsplit(frequency,"_");
+            channel=channel{1};
+
+            normalAT = alphaNormal./thetaNormal;
+            medsAT = alphaMeds./thetaMeds;
+            data = setData(strcat(channel, "_alpha/theta"), j, normalAT, medsAT, data);
+            j=j+1;
+
+            bandNormal = alphaNormal + betaNormal + gammaNormal + deltaNormal + thetaNormal;
+            bandMeds = alphaMeds + betaMeds + gammaMeds + deltaMeds + thetaMeds;
+
+            normalAB = alphaNormal./bandNormal;
+            medsAB = alphaMeds./bandMeds;
+            data = setData(strcat(channel, "_alpha/band"), j, normalAB, medsAB, data);
+            j=j+1;
+
+            normalBB = betaNormal./bandNormal;
+            medsBB = betaMeds./bandMeds;
+            data = setData(strcat(channel, "_beta/band"), j, normalBB, medsBB, data);
+            j=j+1;
+
+            normalGB = gammaNormal./bandNormal;
+            medsGB = gammaMeds./bandMeds;                  
+            data = setData(strcat(channel, "_gamma/band"), j, normalGB, medsGB, data);
+            j=j+1;
+
+            normalDB = deltaNormal./bandNormal;
+            medsDB = deltaMeds./bandMeds;                   
+            data = setData(strcat(channel, "_delta/band"), j, normalDB, medsDB, data);
+            j=j+1;
+
+            normalTB = thetaNormal./bandNormal;
+            medsTB = thetaMeds./bandMeds;                                 
+            data = setData(strcat(channel, "_theta/band"), j, normalTB, medsTB, data);
+            j=j+1;
+
+            alphaNormal =  {};
+            alphaMeds = {}; 
+            betaNormal = {};
+            betaMeds = {};
+            gammaNormal = {};
+            gammaMeds = {};
+            deltaNormal = {};
+            deltaMeds = {};
+            thetaNormal = {};
+            thetaMeds = {};
+        end
     end
     
-    fileName = strcat('Results/',nameMeds, '_normal_data.xls'); 
+    fileName = strcat(savepath,nameMeds, '_',group,'_data.xls'); 
     data = cell2table(data);
     writetable(data, fileName); 
 
+end
+
+%used in calcPValues to set data array and calculate t-test
+function data = setData(channelName, j, normal, meds, data)
+    data{j+1,1} = channelName;
+    [h,p] = ttest2(normal, meds, 'Vartype','unequal');
+    data{j+1,2} = p;
+    data{j+1,3} = size(normal,1);
+    data{j+1,4} = mean(normal,'omitnan');         
+    data{j+1,5} = std(normal,'omitnan');         
+    data{j+1,6} = size(meds,1);       
+    data{j+1,7} = mean(meds,'omitnan'); 
+    data{j+1,8} = std(meds,'omitnan');
 end
 
 % calculates statistics for normal and medical data with sampling
@@ -683,16 +662,38 @@ end
 % bAT           adjust function for alpha/theta output
 % bAbsolut      adjust function for absolut or relative value output
 % sFigureName   Headline for figure output
-function visualizePValues(dataPValue, bAbsolut, sFigureName)
+% bonferoni     if true: bonferoni correction is applied
+% groupname      name of group to compare with (i.e. normal, AD,...)
+function visualizePValues(dataPValue, bAbsolut, sFigureName, savepath, bonferoni, groupname)
 
     fig = figure('Name', sFigureName, 'visible','off'); 
+
+    if bonferoni
+        sFigureName=strcat(sFigureName," with Bonferoni correction");
+    end
     
     %for alpha, beta, gamma/alpha by theta, delta, theta 
     for i = 1:7
         
         freq = ''; 
    
-        subplot(2, 4, i);
+        h3=subplot(2, 4, i);
+        set(h3, 'Units', 'normalized');
+        if i==1
+            set(h3, 'Position', [0.13, .5838, .1566, .3412]);
+        elseif i==2
+            set(h3, 'Position', [0.26, .5838, .1566, .3412]);
+        elseif i==3
+            set(h3, 'Position', [0.39, .5838, .1566, .3412]);
+        elseif i==4
+            set(h3, 'Position', [0.57, .5838, .1566, .3412]);
+        elseif i==5
+            set(h3, 'Position', [0.13, .25, .1566, .3412]);
+        elseif i==6
+            set(h3, 'Position', [0.26, .25, .1566, .3412]);
+        elseif i==7
+            set(h3, 'Position', [0.39, .25, .1566, .3412]);            
+        end
         switch i
             case 1
                 freq = 'Alpha';
@@ -709,8 +710,8 @@ function visualizePValues(dataPValue, bAbsolut, sFigureName)
                 text(0, 0.3, 'number of patients');
                 numberNormal = dataPValue(3,3);
                 numberNormal = num2str(numberNormal{1});
-                text(0, 0.2, strcat('normal group: ',numberNormal));
-                numberDrug = dataPValue(3,12);
+                text(0, 0.2, strcat(groupname, ' group: ',numberNormal));
+                numberDrug = dataPValue(3,6);
                 text(0, 0.1, strcat('drug group: ',numberDrug));
              	set(gca, 'xtick', [], 'YColor', 'none'); 
                 freq='none';
@@ -724,22 +725,28 @@ function visualizePValues(dataPValue, bAbsolut, sFigureName)
                 disp('error switch case visualizePValue')
         end
         if ~strcmp(freq,'none')
-            plotFace(dataPValue, freq, bAbsolut)
+            plotFace(dataPValue, freq, bAbsolut, bonferoni)
         end
 
     end
    
     %legend subplot
-    subplot(2,4,8);
-    plotLegend();
+    h3=subplot(2,4,8);
+    set(h3, 'Position', [0.57, .25, .1566, .3412]);
+    plotLegend(bonferoni);
     
     set(gcf, 'PaperUnits', 'centimeters');
     set(gcf, 'PaperPosition', [0 0 45 25]);
     %savefig(strcat('Results/',sFigureName));
-    saveas(fig, strcat('Results/',sFigureName, '.png'));
+    if bonferoni
+        sFigureName=strcat(sFigureName,"_Bonferoni");
+    end
+    saveas(fig, strcat(savepath,sFigureName, '.png'));
 end
 
-function plotFace(dataPValue, freq, bAbsolut)
+
+
+function plotFace(dataPValue, freq, bAbsolut, bonferoni)
     %nose circle
     r = 0.25; 
     c = [3,5];
@@ -753,254 +760,304 @@ function plotFace(dataPValue, freq, bAbsolut)
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', 'white');
 
     %FP1 circle
-    r = 0.25; 
+    r = 0.29; 
     c = [2.5,4.5];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'FP1', freq, bAbsolut);
 
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(2.35, 4.5, 'FP1');
+    text(2.25, 4.5, 'FP1');
 
     %FP2 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [3.5,4.5];
     pos = [c-r 2*r 2*r]; 
     pValue = getPValueFromCellArray(dataPValue, 'FP2', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(3.35, 4.5, 'FP2');
+    text(3.25, 4.5, 'FP2');
 
     %F7 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [1.75,4];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'F7', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(1.65, 4, 'F7');
+    text(1.6, 4, 'F7');
 
     %F3 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [2.35,3.75];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'F3', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(2.25, 3.75, 'F3');
+    text(2.2, 3.75, 'F3');
 
     %Fz circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [3,3.75];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'FZ', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(2.9, 3.75, 'Fz');
+    text(2.85, 3.75, 'Fz');
 
     %F4 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [3.6,3.75];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'F4', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(3.5, 3.75, 'F4');
+    text(3.45, 3.75, 'F4');
 
     %F8 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [4.25,4];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'F8', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(4.15, 4, 'F8');
+    text(4.1, 4, 'F8');
 
     %T3 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [1.5,3];
     pos = [c-r 2*r 2*r];
 
 
     pValue = getPValueFromCellArray(dataPValue, 'T3', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(1.4, 3, 'T3');
+    text(1.35, 3, 'T3');
 
     %C3 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [2.2,3];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'C3', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(2.1, 3, 'C3');
+    text(2.05, 3, 'C3');
 
     %Cz circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [3,3];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'CZ', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(2.9, 3, 'Cz');
+    text(2.85, 3, 'Cz');
 
     %C4 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [3.8,3];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'C4', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(3.7, 3, 'C4');
+    text(3.65, 3, 'C4');
 
     %T4 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [4.5,3];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'T4', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(4.4, 3, 'T4');
+    text(4.35, 3, 'T4');
 
     %T5 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [1.75,2];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'T5', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(1.65, 2, 'T5');
+    text(1.6, 2, 'T5');
 
     %P3 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [2.35,2.25];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'P3', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(2.25, 2.25, 'P3');
+    text(2.2, 2.25, 'P3');
 
     %Pz circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [3,2.25];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'PZ', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(2.9, 2.25, 'Pz');
+    text(2.85, 2.25, 'Pz');
 
     %P4 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [3.6,2.25];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'P4', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(3.5, 2.25, 'P4');
+    text(3.45, 2.25, 'P4');
 
     %T6 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [4.25,2];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'T6', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(4.15, 2, 'T6');
+    text(4.1, 2, 'T6');
 
     %O1 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [2.5,1.5];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'O1', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(2.4, 1.5, 'O1');
+    text(2.35, 1.5, 'O1');
 
     %O2 circle
-    r = 0.25; 
+    %r = 0.25; 
     c = [3.5,1.5];
     pos = [c-r 2*r 2*r];
 
     pValue = getPValueFromCellArray(dataPValue, 'O2', freq, bAbsolut);
-    color = getColorForPValue(pValue);  
+    color = getColorForPValue(pValue, bonferoni);  
     rectangle('Position',pos,'Curvature',[1 1], 'FaceColor', color);
-    text(3.4, 1.5, 'O2');
+    text(3.35, 1.5, 'O2');
 
     axis equal;
-    xlabel(freq); 
-    set(gca, 'xtick', [], 'YColor', 'none'); 
+    if freq == "A/T" 
+        freq="Alpha/Theta";
+    end
+    %xlabel(freq, "FontSize", 20); 
+    
+    set(gca, 'xtick', [], 'YColor', 'none', 'XColor', 'none'); 
+    yline(0.5);
+    text(3, 0, freq, "FontSize", 20,'HorizontalAlignment', 'center','FontName','times');
 end
 
-function plotLegend()
+function plotLegend(bonferoni)
     width=0.55;
+
     % positive p values -> red hue
-    color = getColorForPValue(0.0001); 
+    color = getColorForPValue(0.0001, false); 
     rectangle('Position', [1, 1, width, 0.5], 'FaceColor', color); 
-    text(1.01, 1.25, 'Increase, p < 0.001');
+    label='Increase, p < 0.001';
+    if bonferoni
+        label=strcat(label,'/n');
+    end
+    text(1.01, 1.25, label);
     
-    color = getColorForPValue(0.005); 
+    color = getColorForPValue(0.005, false); 
     rectangle('Position', [1, 1.5, width, 0.5], 'FaceColor', color); 
-    text(1.01, 1.75, 'Increase, p < 0.01');
+    label='Increase, p < 0.01';
+    if bonferoni
+        label=strcat(label,'/n');
+    end
+    text(1.01, 1.75, label);
     
-    color = getColorForPValue(0.04); 
+    color = getColorForPValue(0.04, false); 
     rectangle('Position', [1, 2, width, 0.5], 'FaceColor', color);
-    text(1.01, 2.25, 'Increase, p < 0.05');
+    label='Increase, p < 0.05';
+    if bonferoni
+        label=strcat(label,'/n');
+    end
+    text(1.01, 2.25, label);
     
-    color = getColorForPValue(0.06); 
+    color = getColorForPValue(0.06, false); 
     rectangle('Position', [1, 2.5, width, 0.5], 'FaceColor', color); 
-    text(1.01, 2.75, 'Increase, p < 0.1');
+    label='Increase, p < 0.1';
+    if bonferoni
+        label=strcat(label,'/n');
+    end
+    text(1.01, 2.75, label);
     
-    color = getColorForPValue(0.15); 
+    color = getColorForPValue(0.15, false); 
     rectangle('Position', [1,3, width, 0.5], 'FaceColor',color);
-    text(1.01, 3.25, 'Increase, p > 0.1');
+    label='Increase, p > 0.1';
+    if bonferoni
+        label=strcat(label,'/n');
+    end
+    text(1.01, 3.25, label);
     
-    %color = getColorForPValue(0.5); 
+    %color = getColorForPValue(0.5, false); 
     %rectangle('Position', [1,3, width, 0.5], 'FaceColor',color); 
     %text(1.01, 3.25, 'Increase, 0.2 < p'); 
     
     % negative p values -> blue hue
-    color = getColorForPValue(-0.0001); 
+    color = getColorForPValue(-0.0001, false); 
     rectangle('Position', [1.6, 1, width, 0.5], 'FaceColor', color); 
-    text(1.61, 1.25, 'Decrease, p < 0.001');
+    label='Decrease, p < 0.001';
+    if bonferoni
+        label=strcat(label,'/n');
+    end
+    text(1.61, 1.25, label);
     
-    color = getColorForPValue(-0.001); 
+    color = getColorForPValue(-0.001, false); 
     rectangle('Position', [1.6, 1.5, width, 0.5], 'FaceColor', color);  
-    text(1.61, 1.75, 'Decrease, p < 0.01');
+    label='Decrease, p < 0.01';
+    if bonferoni
+        label=strcat(label,'/n');
+    end
+    text(1.61, 1.75, label);
     
-    color = getColorForPValue(-0.04); 
+    color = getColorForPValue(-0.04, false); 
     rectangle('Position', [1.6, 2, width, 0.5], 'FaceColor', color);  
-    text(1.61, 2.25, 'Decrease, p < 0.05');
+    label='Decrease, p < 0.05';
+    if bonferoni
+        label=strcat(label,'/n');
+    end
+    text(1.61, 2.25, label);
     
-    color = getColorForPValue(-0.06); 
+    color = getColorForPValue(-0.06, false); 
     rectangle('Position', [1.6, 2.5, width, 0.5], 'FaceColor', color); 
-    text(1.61, 2.75, 'Decrease, p < 0.1');
+    label='Decrease, p < 0.1';
+    if bonferoni
+        label=strcat(label,'/n');
+    end
+    text(1.61, 2.75, label);
     
-    color = getColorForPValue(-0.15); 
+    color = getColorForPValue(-0.15, false); 
     rectangle('Position', [1.6, 3, width, 0.5], 'FaceColor', color); 
-    text(1.61, 3.25, 'Decrease, p > 0.1');
+    label='Decrease, p > 0.1';
+    if bonferoni
+        label=strcat(label,'/n');
+    end
+    text(1.61, 3.25, label);
     
-    %color = getColorForPValue(-0.5); 
+    %color = getColorForPValue(-0.5, false); 
     %rectangle('Position', [1.6, 3, width, 0.5], 'FaceColor', color); 
     %text(1.61, 3.25, 'Decrease, 0.2 < p'); 
-    
-    xlabel('Legend'); 
+    label='Legend';
+    if bonferoni
+        label=strcat(label,": with Bonferoni correction, n = number of tests (114)");
+    end
+    xlabel(label); 
     set(gca, 'xtick', [], 'YColor', 'none'); 
 end
 % gets correct value from summary data file 
@@ -1010,77 +1067,60 @@ end
 %  bAbsolut     bool for either absolut or relative numbers
 function pValue = getPValueFromCellArray(dataArray, channel, frequency, bAbsolut)
 
-    if strcmp(frequency, 'A/T')
-        %FYI no data in dataArray with relative alpha/theta 
-        %wasn't necessary so far
-        compareString = strcat(channel, '_power', 'Theta');
-        for i = 1:length(dataArray)
-            if strcmp(compareString, dataArray{i,1})
-                pValue = dataArray{i, 8};
-                
-                dataMeds = dataArray{i,7};
-                dataNormal = dataArray{i,6};
-                meanDiff = dataMeds - dataNormal;
-                break;
-            end
-        end
-    else
+    %absolut or relative values
+    if bAbsolut
         compareString = strcat(channel, '_power', frequency);
-        for i = 1:length(dataArray)
-            if strcmp(compareString, dataArray{i,1})
-                %absolut or relative values 
-                if bAbsolut
-                    pValue = dataArray{i,2};  
-                else
-                    x = mod(i-2,5);
-                    switch x
-                        case 1 %alpha
-                            pValue = dataArray{i+4,11};
-                        case 2 %beta
-                            pValue = dataArray{i+3,15};
-                        case 3 %gamma
-                            pValue = dataArray{i+2,16};
-                        case 4 %delta
-                            pValue = dataArray{i+1,17};
-                        case 0 %theta
-                            pValue = dataArray{i,18};
-                    end
-                end
-                
-                dataMeds = dataArray{i, 13};
-                dataMeds = str2double(dataMeds);
-                dataNormal = dataArray{i, 4};
-                %dataNormal = str2double(dataNormal);
-                meanDiff = dataMeds - dataNormal; 
+    else
+        compareString = strcat(channel, '_', frequency, '/band');
+    end
+    if strcmp(frequency, 'A/T')
+        compareString = strcat(channel, '_alpha/theta');
+    end
+    pValue=nan;
+    for i = 1:length(dataArray)
 
-            end
+        if strcmpi(compareString, dataArray{i,1})
+
+            pValue = dataArray{i,2};  
+
+            dataMeds = dataArray{i, 7};%mean medicine
+            dataMeds = str2double(dataMeds);
+            dataNormal = dataArray{i, 4};%mean normal
+            %dataNormal = str2double(dataNormal);
+            meanDiff = dataMeds - dataNormal; 
+
         end
     end
     isNumber = ~isnan(str2double(pValue)); 
     if isNumber
         pValue = str2double(pValue);
+        % check for mean difference
+        % sign codifies if it's red (positive) or blue (negative)
+        if meanDiff < 0
+            pValue = pValue * -1;
+        end
     end
-    % check for mean difference
-    % sign codifies if it's red (positive) or blue (negative)
-    if meanDiff < 0
-        pValue = pValue * -1;
-    end
-    
 end
 
 % retuns a color for a given p Value
 % positive values are a hue of red
 % negative values are a hue of blue
-function color = getColorForPValue(pValue)
-
+function color = getColorForPValue(pValue, bonferoni)
+    if bonferoni
+        pValue=pValue*114;
+    end
     if pValue > 0 && pValue <= 0.001
-        color = '#A40000'; % Dark Candy Apple Red
+        %color = '#A40000'; % Dark Candy Apple Red
+         color = '#CC0000'; % Boston Univeristy Red
     elseif pValue > 0.001 && pValue <= 0.01
-        color = '#CC0000'; % Boston Univeristy Red
-    elseif pValue > 0.01 && pValue <= 0.05
+        %color = '#CC0000'; % Boston Univeristy Red
         color = '#E34234'; % Cinnabar
-    elseif pValue > 0.05 && pValue <= 0.1
+    elseif pValue > 0.01 && pValue <= 0.05
+        %color = '#E34234'; % Cinnabar
         color = '#FF6961'; % Pastel Red
+    elseif pValue > 0.05 && pValue <= 0.1
+        %color = '#FF6961'; % Pastel Red
+        color = '#FFFFFF';%'#F4C2C2'; %Baby Pink
     elseif pValue > 0.1 && pValue <= 0.2
         color = '#FFFFFF';%'#F4C2C2'; %Baby Pink
     elseif pValue > 0.2
@@ -1090,13 +1130,17 @@ function color = getColorForPValue(pValue)
     elseif -0.1 >= pValue && pValue > -0.2
         color = '#FFFFFF';%'#92A1CF'; % Ceil
     elseif -0.05 >= pValue && pValue > -0.1
-        color = '#aed6f1'; % Ceil
+        %color = '#aed6f1'; % Ceil
+        color = '#FFFFFF';%'#92A1CF'; % Ceil
     elseif -0.01 >= pValue && pValue > -0.05
-        color = '#5dade2'; % cerulean blue
+        %color = '#5dade2'; % cerulean blue
+        color = '#aed6f1'; % Ceil
     elseif -0.001 >= pValue && pValue > -0.01
-        color = '#2e86c1'; % dark blue
+        %color = '#2e86c1'; % dark blue
+        color = '#5dade2'; % cerulean blue
     elseif 0 >= pValue && pValue > -0.001
-        color = '#21618c'; % royal blue
+        %color = '#21618c'; % royal blue
+        color = '#2e86c1'; % dark blue
     else
         color = '#399a33'; %green: something went wrong!
     end

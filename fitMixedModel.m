@@ -1,8 +1,10 @@
 %fits different mixed model
 clear;
 
-file="Results/FullTableMixedModelNormal.csv";
+file="D:/Results/FullTableMixedModelNormal.csv";
 table = readtable(file);
+
+table=table(:,{'PatientNr', 'FrequencyBand', 'ElectrodeLocation', 'Power', 'Antidepressant', 'Antipsychotic', 'TotalSerotonin', 'TotalDopamine', 'TotalNorepinephrine', 'TotalHistamine', 'TotalAcetylcholine' });
 
 %set if columns are categorical
 table.PatientNr = categorical(table.PatientNr);
@@ -50,18 +52,18 @@ table.TotalAcetylcholine = categorical(table.TotalAcetylcholine);
 %lme = fitlme(table,"Power ~  ElectrodeLocation +  FrequencyBand*TotalSerotonin + FrequencyBand*TotalDopamine + FrequencyBand*TotalNorepinephrine + FrequencyBand*TotalHistamine + FrequencyBand*TotalAcetylcholine + (1|PatientNr)");
 
 %Model 7
-lme2 = fitlme(table,"Power ~  ElectrodeLocation*FrequencyBand*TotalSerotonin + ElectrodeLocation*FrequencyBand*TotalDopamine + ElectrodeLocation*FrequencyBand*TotalNorepinephrine + ElectrodeLocation*FrequencyBand*TotalHistamine + ElectrodeLocation*FrequencyBand*TotalAcetylcholine + (1|PatientNr)");
+%lme2 = fitlme(table,"Power ~  ElectrodeLocation*FrequencyBand*TotalSerotonin + ElectrodeLocation*FrequencyBand*TotalDopamine + ElectrodeLocation*FrequencyBand*TotalNorepinephrine + ElectrodeLocation*FrequencyBand*TotalHistamine + ElectrodeLocation*FrequencyBand*TotalAcetylcholine + (1|PatientNr)");
 
 
 %Model 8
 lme = fitlme(table,"Power ~  ElectrodeLocation*FrequencyBand*Antidepressant + ElectrodeLocation*FrequencyBand*Antipsychotic + (1|PatientNr)");
 
 
-%lme2
+lme
 
 
 %%%%%%%%%%%%%%%%%%%%%compare models%%%%%%%%%%%%%%%%%%%%%%%%%%
-compare(lme, lme2)
+%compare(lme, lme2)
 
 %%%%%%%%%%%%%%%%%%%%F-test%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %pVal = coefTest(lme);

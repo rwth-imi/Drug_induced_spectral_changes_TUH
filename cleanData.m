@@ -11,6 +11,8 @@ eeglab;
 %     "Trazodone", "Valproate", "Lamotrigine", "Carbamazepine", "Topiramate", "Levetiracetam", "Lithium", ...
 %     "Lorazepam", "Clonazepam", "Diazepam", "Alprazolam"];
 
+
+
 %all drugs for mixed model
 meds=["Risperidone", "Olanzapine", "Quetiapine", "Aripiprazole", "Ziprasidone", "Haloperidol", ...
     "Cariprazine", "Asenapine", "Benperidol", "Bromperidol", "Chlorprotixene", "Flupentixole", ...
@@ -23,6 +25,7 @@ meds=["Risperidone", "Olanzapine", "Quetiapine", "Aripiprazole", "Ziprasidone", 
     "Tranylcypromin", "Trimipramin",...
     "Lithium"];
 
+meds=["Levetiracetam"];
 drive="D:/";
 
 %import necessary functions

@@ -29,6 +29,7 @@ meds=["Risperidone", "Olanzapine", "Quetiapine", "Aripiprazole", "Ziprasidone", 
 %     "Trazodone", "Valproate", "Lamotrigine", "Carbamazepine", "Topiramate", "Levetiracetam", "Lithium", ...
 %     "Lorazepam", "Clonazepam", "Diazepam", "Alprazolam"];
 
+ meds=["Levetiracetam"];
 drive="D:/";
 
 for i=1:length(meds)
