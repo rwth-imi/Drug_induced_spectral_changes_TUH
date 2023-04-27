@@ -346,7 +346,16 @@ end
 %used in calcPValues to set data array and calculate t-test
 function data = setData(channelName, j, normal, meds, data)
     data{j+1,1} = channelName;
-    [h,p] = ttest2(normal, meds, 'Vartype','unequal');
+    %test for normality
+    h1 = kstest(normal);
+    h2 = kstest(meds);
+    if h1==0 && h2==0
+        %t-test for normally distributed samples
+        [h,p] = ttest2(normal, meds, 'Vartype','unequal');
+    else
+        %two-sided Wilcoxon rank sum test
+        p = ranksum(normal,meds);
+    end
     data{j+1,2} = p;
     data{j+1,3} = size(normal,1);
     data{j+1,4} = mean(normal,'omitnan');         
