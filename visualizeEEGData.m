@@ -679,6 +679,8 @@ function visualizePValues(dataPValue, bAbsolut, sFigureName, savepath, bonferoni
 
     if bonferoni
         sFigureName=strcat(sFigureName," with Bonferoni correction");
+        %test=cell2mat(dataPValue(3:end, 2));
+        %[~, qValues] = mafdr(test);
     end
     
     %for alpha, beta, gamma/alpha by theta, delta, theta 
@@ -1120,13 +1122,16 @@ function color = getColorForPValue(pValue, bonferoni)
     end
     if pValue > 0 && pValue <= 0.001
         %color = '#A40000'; % Dark Candy Apple Red
-         color = '#CC0000'; % Boston Univeristy Red
+         %color = '#CC0000'; % Boston Univeristy Red
+         color = '#ff0000';
     elseif pValue > 0.001 && pValue <= 0.01
         %color = '#CC0000'; % Boston Univeristy Red
-        color = '#E34234'; % Cinnabar
+        %color = '#E34234'; % Cinnabar
+        color = '#ff9933';
     elseif pValue > 0.01 && pValue <= 0.05
         %color = '#E34234'; % Cinnabar
-        color = '#FF6961'; % Pastel Red
+        %color = '#FF6961'; % Pastel Red
+        color = '#ffff00';
     elseif pValue > 0.05 && pValue <= 0.1
         %color = '#FF6961'; % Pastel Red
         color = '#FFFFFF';%'#F4C2C2'; %Baby Pink
@@ -1143,13 +1148,16 @@ function color = getColorForPValue(pValue, bonferoni)
         color = '#FFFFFF';%'#92A1CF'; % Ceil
     elseif -0.01 >= pValue && pValue > -0.05
         %color = '#5dade2'; % cerulean blue
-        color = '#aed6f1'; % Ceil
+        %color = '#aed6f1'; % Ceil
+        color='#00ffff';
     elseif -0.001 >= pValue && pValue > -0.01
         %color = '#2e86c1'; % dark blue
-        color = '#5dade2'; % cerulean blue
+        %color = '#5dade2'; % cerulean blue
+        color='#00c2eb';
     elseif 0 >= pValue && pValue > -0.001
         %color = '#21618c'; % royal blue
-        color = '#2e86c1'; % dark blue
+        %color = '#2e86c1'; % dark blue
+        color='#0066cc';
     else
         color = '#399a33'; %green: something went wrong!
     end

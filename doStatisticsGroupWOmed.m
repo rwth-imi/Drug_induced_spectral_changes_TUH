@@ -10,6 +10,7 @@ funcEDF = functionsForEDFFiles;
 %change folders and drug group
 drive="D:/Results/t-test/drug groups/";
 driveS="D:/Results/t-test/single drugs/";
+group="AP";
 group="AED";
 
 if group == "AP"

@@ -8,19 +8,20 @@ funcEDF = functionsForEDFFiles;
 
 psFolder = "D:/Results/t-test/single drugs/Powerspectrum/";%powerspecrta for single drugs
 resultFolder = "D:/Results/t-test/drug groups/Powerspectrum/";%result folder
-drugGroup="AP";%change to group to be calculated
+drugGroup="AED";%change to group to be calculated
 
 meds="";
 drug="";
 
+singleDrug=true;%only use files with single drug intake (only one drug from our list)
+
 %drug groups from Hyun
 if drugGroup == "AP"
-    medsFull=["Risperidone", "Olanzapine", "Quetiapine", "Aripiprazole", "Ziprasidone", "Haloperidol", "Clozapin"];%no files for Amisulpride, Paliperidone
-    %what about Clozapin?
+    medsFull=["Risperidone", "Olanzapine", "Quetiapine", "Aripiprazole", "Ziprasidone", "Haloperidol"];%no files for Amisulpride, Paliperidone
 elseif drugGroup == "AD"
     medsFull = ["Escitalopram", "Sertraline", "Paroxetine", "Fluoxetine", "Bupropion", "Venlafaxine", "Trazodone"];
 elseif drugGroup == "AED"
-    medsFull=["Valproate", "Lamotrigine", "Carbamazepine", "Topiramate", "Levetiracetam"];
+    medsFull=["Carbamazepine", "Valproate", "Lamotrigine", "Topiramate", "Levetiracetam"];
 elseif drugGroup == "BDZ"
     medsFull = ["Lorazepam", "Clonazepam", "Diazepam", "Alprazolam"];
 end
@@ -37,7 +38,11 @@ for j=1:length(medsFull)
         medicine = strcat(meds(i));
 
         %get powerspectrum data
-        psfile = strcat(psFolder, medicine, '_powerspectrum.xls');
+        if singleDrug
+            psfile = strcat(psFolder, medicine, '_powerspectrumSingleDrug.xls');
+        else
+            psfile = strcat(psFolder, medicine, '_powerspectrum.xls');
+        end
         power=readcell(psfile);
         s=size(power,1);
         if i==1

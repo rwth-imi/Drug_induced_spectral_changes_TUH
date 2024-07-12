@@ -242,6 +242,19 @@ function calculatePowerForBandsTTest(list, saveFile, removedFilesName)
         %read edf file
         try
         EEGData = pop_biosig(list{nrEDF},'importevent','off','importannot','off');
+
+        %check for reference method here: LE -> average, AR -> nothing,
+%everything else -> report
+        %find reference method
+        labels=EEGData.chanlocs.labels;
+        if contains(labels,"LE")
+            EEGData=pop_reref(EEGData, []);
+        elseif not(contains(labels,"REF"))
+            disp(['Unknown reference method for file ' list{nrEDF} ]);
+            removedFiles=[removedFiles; string(list{nrEDF})];
+            continue;
+        end
+        
         
         %remove epochs with too low or high amplitudes
         %remove all channels for corupted epochs
@@ -482,6 +495,7 @@ end
 %set
 %data: data set where power data is inserted
 %channel: 
+
 function data = getPowerData(data, channel, power, powerName, k)
     text = strcat(channel, powerName);
     data{1,k} = text;
@@ -491,7 +505,7 @@ function data = getPowerData(data, channel, power, powerName, k)
         if ~(isempty(ps))
             index = strfind(ps(1,:),channel);
             index = find(~cellfun(@isempty,index));
-        
+            
         else
             index=[];
         end

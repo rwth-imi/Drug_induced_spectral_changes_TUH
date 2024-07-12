@@ -76,11 +76,14 @@ set(gca, 'xtick', [], 'YColor', 'none');
 function color = getColorForPValue(pValue)
 
     if pValue > 0 && pValue <= 0.001
-        color = '#CC0000'; % Dark Candy Apple Red
+        %color = '#CC0000'; % Dark Candy Apple Red
+        color = '#ff0000';
     elseif pValue > 0.001 && pValue <= 0.01
-        color = '#E34234'; % Boston Univeristy Red
+        %color = '#E34234'; % Boston Univeristy Red
+        color = '#ff9933';
     elseif pValue > 0.01 && pValue <= 0.05
-        color = '#FF6961'; % Cinnabar
+        %color = '#FF6961'; % Cinnabar
+        color = '#ffff00';
     elseif pValue > 0.05 && pValue <= 0.1
         color = '#FFFFFF'; % Pastel Red
     elseif pValue > 0.1 && pValue <= 0.2
@@ -94,11 +97,14 @@ function color = getColorForPValue(pValue)
     elseif -0.05 >= pValue && pValue > -0.1
         color = '#FFFFFF'; % Ceil
     elseif -0.01 >= pValue && pValue > -0.05
-        color = '#aed6f1'; % cerulean blue
+        %color = '#aed6f1'; % cerulean blue
+        color='#00ffff';
     elseif -0.001 >= pValue && pValue > -0.01
-        color = '#5dade2'; % dark blue
+        %color = '#5dade2'; % dark blue
+        color='#00c2eb';
     elseif 0 >= pValue && pValue > -0.001
-        color = '#2e86c1'; % royal blue
+        %color = '#2e86c1'; % royal blue
+        color='#0066cc';
     else
         color = '#399a33'; %green: something went wrong!
     end

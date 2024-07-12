@@ -7,7 +7,7 @@ eeglab;
 
 %check if this is the right folder, folders must exists!
 drive="D:/";% folder with edf files
-resultFolder = "D:/Results/t-test/single drugs/Powerspectrum/";% result folder
+resultFolder = "D:/Results/t-test/single drugs/Powerspectrum2/";% result folder
 
 %import necessary functions
 d = functionsForTUHData;
@@ -16,12 +16,13 @@ TUHDownload = functionsTuhDownload;
 excel = scriptWorkWithExcelData;
 
 %all drugs from Hyun
-meds=["Risperidone", "Olanzapine", "Quetiapine", "Aripiprazole", "Ziprasidone", "Haloperidol", "Clozapin", ...
-    "Escitalopram", "Sertraline", "Paroxetine", "Fluoxetine", "Bupropion", "Venlafaxine", "Mirtazapine", ...
-    "Trazodone", "Valproate", "Lamotrigine", "Carbamazepine", "Topiramate", "Levetiracetam", "Lithium", ...
-    "Lorazepam", "Clonazepam", "Diazepam", "Alprazolam"];
+% meds=["Risperidone", "Olanzapine", "Quetiapine", "Aripiprazole", "Ziprasidone", "Haloperidol", "Clozapin", ...
+%     "Escitalopram", "Sertraline", "Paroxetine", "Fluoxetine", "Bupropion", "Venlafaxine", "Mirtazapine", ...
+%     "Trazodone", "Valproate", "Lamotrigine", "Carbamazepine", "Topiramate", "Levetiracetam", "Lithium", ...
+%     "Lorazepam", "Clonazepam", "Diazepam", "Alprazolam"];
 
-meds=["Risperidone"];
+meds=[ "Topiramate", "Levetiracetam"];
+%meds=["Risperidone"];
 for i=1:length(meds)
 
     medicine = strcat(meds(i));

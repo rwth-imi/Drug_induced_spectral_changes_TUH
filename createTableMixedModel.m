@@ -20,8 +20,7 @@ meds=["Risperidone", "Olanzapine", "Quetiapine", "Aripiprazole", "Ziprasidone", 
     "Clozapin", ...
     "Citalopram", "Escitalopram", "Sertraline", "Paroxetine", "Fluoxetine", "Bupropion", "Venlafaxine", "Mirtazapine", ...
     "Trazodone", "Amitriptyline", "Clomipramin", "Doxepin", "Duloxetin", ...
-    "Nortriptylin", ...
-    "Lithium"];
+    "Nortriptylin"];
 
 dataAll = [];
 drive="D:/";
@@ -30,7 +29,7 @@ for i=1:length(meds)
    %get drug table
    medicine = strcat(meds(i));
    disp(medicine);
-   savefile = strcat(drive, 'Results\Powerspectrum\', medicine, '_powerspectrumMixedModel.xls');
+   savefile = strcat(drive, 'Results\MixedModel\Powerspectrum\', medicine, '_powerspectrumMixedModel.xls');
    dataDrug = readtable(savefile);
    %add drug names as headers
    for j=1:length(meds)
@@ -76,6 +75,7 @@ dataAll.Power = num2str(dataAll.Power);
 %save file
 savefile =strcat(drive, "Results\FullTableMixedModelWOReceptorProperties.csv");
 writetable(dataAll, savefile);
+
 disp("Receptor properties");
 %calculate total drug properties
 %add headers for drug groups
